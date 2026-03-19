@@ -1,13 +1,13 @@
 import {
-  ArrowsRightLeftIcon as SwapOutline,
-  CompassIcon as CompassOutline,
+  MapIcon as CompassOutline,
+  StarIcon as CreatorsOutline,
   MagnifyingGlassIcon,
-  StarIcon as CreatorsOutline
+  ArrowsRightLeftIcon as SwapOutline
 } from "@heroicons/react/24/outline";
 import {
-  ArrowsRightLeftIcon as SwapSolid,
-  CompassIcon as CompassSolid,
-  StarIcon as CreatorsSolid
+  MapIcon as CompassSolid,
+  StarIcon as CreatorsSolid,
+  ArrowsRightLeftIcon as SwapSolid
 } from "@heroicons/react/24/solid";
 import type { MouseEvent, ReactNode } from "react";
 import { Link, useLocation } from "react-router";

@@ -1,27 +1,27 @@
 import { useApolloClient } from "@apollo/client";
-import { useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowsRightLeftIcon as SwapOutline,
   BellIcon as BellOutline,
-  BoltIcon as StreaksOutline,
   BookmarkIcon as BookmarkOutline,
-  CompassIcon as CompassOutline,
+  MapIcon as CompassOutline,
   StarIcon as CreatorsOutline,
-  FlagIcon as MissionsOutline,
   TrophyIcon as LeaderboardOutline,
+  FlagIcon as MissionsOutline,
+  BoltIcon as StreaksOutline,
+  ArrowsRightLeftIcon as SwapOutline,
   UserGroupIcon as UserGroupOutline
 } from "@heroicons/react/24/outline";
 import {
-  ArrowsRightLeftIcon as SwapSolid,
   BellIcon as BellSolid,
-  BoltIcon as StreaksSolid,
   BookmarkIcon as BookmarkSolid,
-  CompassIcon as CompassSolid,
+  MapIcon as CompassSolid,
   StarIcon as CreatorsSolid,
-  FlagIcon as MissionsSolid,
   TrophyIcon as LeaderboardSolid,
+  FlagIcon as MissionsSolid,
+  BoltIcon as StreaksSolid,
+  ArrowsRightLeftIcon as SwapSolid,
   UserGroupIcon as UserGroupSolid
 } from "@heroicons/react/24/solid";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   type MouseEvent,
   memo,
@@ -31,8 +31,8 @@ import {
 } from "react";
 import { Link, useLocation } from "react-router";
 import evLogo from "@/assets/fonts/evlogo.jpg";
-import { Image, Spinner, Tooltip } from "@/components/Shared/UI";
 import { ZORA_HOME_FEED_QUERY_KEY } from "@/components/Home/zoraHomeFeedConfig";
+import { Image, Spinner, Tooltip } from "@/components/Shared/UI";
 import useHasNewNotifications from "@/hooks/useHasNewNotifications";
 import {
   GroupsDocument,
@@ -61,37 +61,37 @@ const navigationItems = {
     solid: <CreatorsSolid className="size-6" />,
     title: "Creators"
   },
-  "/leaderboard": {
-    outline: <LeaderboardOutline className="size-6" />,
-    solid: <LeaderboardSolid className="size-6" />,
-    title: "Leaderboard"
-  },
-  "/swap": {
-    outline: <SwapOutline className="size-6" />,
-    solid: <SwapSolid className="size-6" />,
-    title: "Swap"
-  },
-  "/missions": {
-    outline: <MissionsOutline className="size-6" />,
-    solid: <MissionsSolid className="size-6" />,
-    title: "Missions"
-  },
-  "/streaks": {
-    outline: <StreaksOutline className="size-6" />,
-    solid: <StreaksSolid className="size-6" />,
-    title: "Streaks"
-  },
   "/groups": {
     outline: <UserGroupOutline className="size-6" />,
     refreshDocs: [GroupsDocument],
     solid: <UserGroupSolid className="size-6" />,
     title: "Groups"
   },
+  "/leaderboard": {
+    outline: <LeaderboardOutline className="size-6" />,
+    solid: <LeaderboardSolid className="size-6" />,
+    title: "Leaderboard"
+  },
+  "/missions": {
+    outline: <MissionsOutline className="size-6" />,
+    solid: <MissionsSolid className="size-6" />,
+    title: "Missions"
+  },
   "/notifications": {
     outline: <BellOutline className="size-6" />,
     refreshDocs: [NotificationsDocument, NotificationIndicatorDocument],
     solid: <BellSolid className="size-6" />,
     title: "Notifications"
+  },
+  "/streaks": {
+    outline: <StreaksOutline className="size-6" />,
+    solid: <StreaksSolid className="size-6" />,
+    title: "Streaks"
+  },
+  "/swap": {
+    outline: <SwapOutline className="size-6" />,
+    solid: <SwapSolid className="size-6" />,
+    title: "Swap"
   }
 };
 
