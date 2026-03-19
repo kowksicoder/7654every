@@ -3,7 +3,7 @@ import { CONTRACTS } from "./contracts";
 
 export const CHAIN = chains.mainnet;
 
-// Lens and Hey Env Config
+// Lens and Every1 Env Config
 export const LENS_API_URL = "https://api.lens.xyz/graphql";
 export const DEFAULT_COLLECT_TOKEN = CONTRACTS.defaultToken;
 export const HEY_APP = CONTRACTS.app;
@@ -20,7 +20,7 @@ export const BRAND_COLOR = "#FB3A5D";
 export const STATIC_ASSETS_URL = "https://static.hey.xyz";
 export const STATIC_IMAGES_URL = `${STATIC_ASSETS_URL}/images`;
 export const LENS_MEDIA_SNAPSHOT_URL = "https://ik.imagekit.io/lens";
-export const DEFAULT_AVATAR = `${STATIC_IMAGES_URL}/default.png`;
+export const DEFAULT_AVATAR = "/evlogo.jpg";
 export const PLACEHOLDER_IMAGE = `${STATIC_IMAGES_URL}/placeholder.webp`;
 export const BLOCK_EXPLORER_URL = "https://lenscan.io";
 export const BASE_RPC_URL = "https://base.llamarpc.com";

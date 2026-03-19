@@ -57,7 +57,7 @@ const Layout = () => {
         position="bottom-right"
         theme={theme as ToasterProps["theme"]}
         toastOptions={{
-          className: "font-sofia-pro",
+          className: "font-platform",
           style: { boxShadow: "none", fontSize: "16px" }
         }}
       />

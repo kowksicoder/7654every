@@ -1,17 +1,26 @@
 import { useApolloClient } from "@apollo/client";
 import {
+  ArrowsRightLeftIcon as SwapOutline,
   BellIcon as BellOutline,
+  BoltIcon as StreaksOutline,
   BookmarkIcon as BookmarkOutline,
+  StarIcon as CreatorsOutline,
+  FlagIcon as MissionsOutline,
   GlobeAltIcon as GlobeOutline,
   HomeIcon as HomeOutline,
-  UserCircleIcon,
+  TrophyIcon as LeaderboardOutline,
   UserGroupIcon as UserGroupOutline
 } from "@heroicons/react/24/outline";
 import {
+  ArrowsRightLeftIcon as SwapSolid,
   BellIcon as BellSolid,
+  BoltIcon as StreaksSolid,
   BookmarkIcon as BookmarkSolid,
+  StarIcon as CreatorsSolid,
+  FlagIcon as MissionsSolid,
   GlobeAltIcon as GlobeSolid,
   HomeIcon as HomeSolid,
+  TrophyIcon as LeaderboardSolid,
   UserGroupIcon as UserGroupSolid
 } from "@heroicons/react/24/solid";
 import {
@@ -22,8 +31,8 @@ import {
   useState
 } from "react";
 import { Link, useLocation } from "react-router";
+import evLogo from "@/assets/fonts/evlogo.jpg";
 import { Image, Spinner, Tooltip } from "@/components/Shared/UI";
-import { STATIC_IMAGES_URL } from "@/data/constants";
 import useHasNewNotifications from "@/hooks/useHasNewNotifications";
 import {
   GroupsDocument,
@@ -37,7 +46,6 @@ import {
 } from "@/indexer/generated";
 import { useAuthModalStore } from "@/store/non-persisted/modal/useAuthModalStore";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
-import Pro from "./NavItems/Pro";
 import SignedAccount from "./SignedAccount";
 
 const navigationItems = {
@@ -62,6 +70,31 @@ const navigationItems = {
     refreshDocs: [PostsExploreDocument],
     solid: <GlobeSolid className="size-6" />,
     title: "Explore"
+  },
+  "/creators": {
+    outline: <CreatorsOutline className="size-6" />,
+    solid: <CreatorsSolid className="size-6" />,
+    title: "Creators"
+  },
+  "/leaderboard": {
+    outline: <LeaderboardOutline className="size-6" />,
+    solid: <LeaderboardSolid className="size-6" />,
+    title: "Leaderboard"
+  },
+  "/swap": {
+    outline: <SwapOutline className="size-6" />,
+    solid: <SwapSolid className="size-6" />,
+    title: "Swap"
+  },
+  "/missions": {
+    outline: <MissionsOutline className="size-6" />,
+    solid: <MissionsSolid className="size-6" />,
+    title: "Missions"
+  },
+  "/streaks": {
+    outline: <StreaksOutline className="size-6" />,
+    solid: <StreaksSolid className="size-6" />,
+    title: "Streaks"
   },
   "/groups": {
     outline: <UserGroupOutline className="size-6" />,
@@ -99,6 +132,11 @@ const NavItems = memo(({ isLoggedIn }: { isLoggedIn: boolean }) => {
   const routes = [
     "/",
     "/explore",
+    "/creators",
+    "/leaderboard",
+    "/swap",
+    "/missions",
+    "/streaks",
     ...(isLoggedIn ? ["/notifications", "/groups", "/bookmarks"] : [])
   ];
 
@@ -179,22 +217,25 @@ const Navbar = () => {
       <Link onClick={handleLogoClick} to="/">
         <Image
           alt="Logo"
-          className="size-8"
+          className="size-8 rounded-lg object-cover"
           height={32}
-          src={`${STATIC_IMAGES_URL}/app-icon/0.png`}
+          src={evLogo}
           width={32}
         />
       </Link>
       <NavItems isLoggedIn={!!currentAccount} />
       {currentAccount ? (
-        <>
-          <Pro />
-          <SignedAccount />
-        </>
+        <SignedAccount />
       ) : (
         <button onClick={handleAuthClick} type="button">
           <Tooltip content="Login">
-            <UserCircleIcon className="size-6" />
+            <Image
+              alt="Profile"
+              className="size-6 rounded-full object-cover"
+              height={24}
+              src={evLogo}
+              width={24}
+            />
           </Tooltip>
         </button>
       )}

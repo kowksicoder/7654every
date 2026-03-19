@@ -1,14 +1,14 @@
+import evLogo from "@/assets/fonts/evlogo.jpg";
 import { Image } from "@/components/Shared/UI";
-import { STATIC_IMAGES_URL } from "@/data/constants";
 
 const FullPageLoader = () => {
   return (
     <div className="grid h-screen place-items-center">
       <Image
         alt="Logo"
-        className="size-28"
+        className="size-28 rounded-3xl object-cover"
         height={112}
-        src={`${STATIC_IMAGES_URL}/app-icon/0.png`}
+        src={evLogo}
         width={112}
       />
     </div>

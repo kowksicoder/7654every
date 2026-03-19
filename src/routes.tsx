@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes as RouterRoutes } from "react-router";
 import ViewAccount from "@/components/Account";
 import Bookmarks from "@/components/Bookmarks";
 import Layout from "@/components/Common/Layout";
+import Creators from "@/components/Creators";
 import ENS from "@/components/ENS";
 import Explore from "@/components/Explore";
 import ViewGroup from "@/components/Group";
@@ -11,11 +12,14 @@ import { default as GroupPersonalizeSettings } from "@/components/Group/Settings
 import RulesSettings from "@/components/Group/Settings/Rules";
 import Groups from "@/components/Groups";
 import Home from "@/components/Home";
+import Leaderboard from "@/components/Leaderboard";
+import Missions from "@/components/Missions";
 import Notification from "@/components/Notification";
 import Copyright from "@/components/Pages/Copyright";
 import Guidelines from "@/components/Pages/Guidelines";
 import Privacy from "@/components/Pages/Privacy";
 import Support from "@/components/Pages/Support";
+import Streaks from "@/components/Streaks";
 import Terms from "@/components/Pages/Terms";
 import ViewPost from "@/components/Post";
 import Search from "@/components/Search";
@@ -29,6 +33,7 @@ import { default as AccountMonetizeSettings } from "@/components/Settings/Moneti
 import { default as AccountPersonalizeSettings } from "@/components/Settings/Personalize";
 import ProSettings from "@/components/Settings/Pro";
 import SessionsSettings from "@/components/Settings/Sessions";
+import Swap from "@/components/Swap";
 import UsernameSettings from "@/components/Settings/Username";
 import Custom404 from "@/components/Shared/404";
 import RewardsSettings from "./components/Settings/Rewards";
@@ -41,6 +46,11 @@ const Routes = () => {
         <Route element={<Layout />} path="/">
           <Route element={<Home />} index />
           <Route element={<Explore />} path="explore" />
+          <Route element={<Creators />} path="creators" />
+          <Route element={<Leaderboard />} path="leaderboard" />
+          <Route element={<Swap />} path="swap" />
+          <Route element={<Missions />} path="missions" />
+          <Route element={<Streaks />} path="streaks" />
           <Route element={<Search />} path="search" />
           <Route element={<Groups />} path="groups" />
           <Route element={<Bookmarks />} path="bookmarks" />

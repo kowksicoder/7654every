@@ -17,7 +17,7 @@ const Support = () => {
           <div className="my-5 flex flex-col space-y-2">
             <Link to="/guidelines">Community Guidelines</Link>
             <Link to="/terms">Terms of Service</Link>
-            <Link to="/privacy">Hey Privacy Policy</Link>
+            <Link to="/privacy">Every1 Privacy Policy</Link>
             <Link target="_blank" to="https://www.lens.xyz/privacy">
               Lens Privacy Policy
             </Link>

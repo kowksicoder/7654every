@@ -4,7 +4,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sofia-pro: "Sofia Pro", sans-serif;
+  --font-platform: "Poppins Rounded", sans-serif;
   --animate-shimmer: shimmer 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
   /* Brand Colors */
@@ -26,7 +26,7 @@
 
 @layer base {
   :root {
-    @apply font-sofia-pro text-black dark:text-white;
+    @apply font-platform text-black dark:text-white;
   }
 
   html {

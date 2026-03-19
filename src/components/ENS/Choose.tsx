@@ -4,12 +4,9 @@ import {
 } from "@heroicons/react/24/outline";
 import { useCallback, useState } from "react";
 import z from "zod";
+import evLogo from "@/assets/fonts/evlogo.jpg";
 import NotLoggedIn from "@/components/Shared/NotLoggedIn";
-import {
-  HEY_ENS_NAMESPACE,
-  NATIVE_TOKEN_SYMBOL,
-  STATIC_IMAGES_URL
-} from "@/data/constants";
+import { HEY_ENS_NAMESPACE, NATIVE_TOKEN_SYMBOL } from "@/data/constants";
 import errorToast from "@/helpers/errorToast";
 import getTokenImage from "@/helpers/getTokenImage";
 import useHandleWrongNetwork from "@/hooks/useHandleWrongNetwork";
@@ -158,12 +155,12 @@ const Choose = () => {
         <div className="flex items-center gap-2">
           <Image
             alt="Logo"
-            className="size-4"
+            className="size-4 rounded object-cover"
             height={16}
-            src={`${STATIC_IMAGES_URL}/app-icon/0.png`}
+            src={evLogo}
             width={16}
           />
-          <div className="font-black">Heynames</div>
+          <div className="font-black">Every1 Names</div>
         </div>
         <div className="text-gray-500 text-sm">Powered by ENS</div>
       </div>

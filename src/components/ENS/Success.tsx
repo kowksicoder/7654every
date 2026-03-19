@@ -8,9 +8,9 @@ const Success = () => {
 
   return (
     <Card className="flex flex-col items-center justify-center p-5">
-      <H4>Waaa-hey! You got your ENS name!</H4>
+      <H4>Your ENS name is ready!</H4>
       <div className="mt-3 text-center font-semibold text-gray-500 dark:text-gray-200">
-        Congrats on claiming your unique ENS name that will last forever! 🎉
+        Congrats on claiming your unique ENS name that will last forever.
       </div>
       <div className="linkify mt-3 text-gray-500 dark:text-gray-200">
         Visit{" "}

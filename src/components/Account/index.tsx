@@ -103,7 +103,7 @@ const ViewAccount = () => {
 
   return (
     <PageLayout
-      title={`${accountInfo.name} (${accountInfo.username}) • Hey`}
+      title={`${accountInfo.name} (${accountInfo.username}) - Every1`}
       zeroTopMargin
     >
       <Cover

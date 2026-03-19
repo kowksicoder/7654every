@@ -52,10 +52,9 @@ const Success = () => {
 
   return (
     <div className="m-8 flex flex-col items-center justify-center">
-      <H4>Waaa-hey! You got your account!</H4>
+      <H4>Your account is ready!</H4>
       <div className="mt-3 text-center font-semibold text-gray-500 dark:text-gray-200">
-        Welcome to decentralised social where everything is sooooooooooooo much
-        better! 🎉
+        Welcome to Every1. Decentralized social is better with you here.
       </div>
       <Image
         alt="Dizzy emoji"
@@ -65,7 +64,7 @@ const Success = () => {
         width={56}
       />
       <i className="mt-8 text-gray-500 dark:text-gray-200">
-        We are taking you to Hey...
+        We are taking you to Every1...
       </i>
     </div>
   );

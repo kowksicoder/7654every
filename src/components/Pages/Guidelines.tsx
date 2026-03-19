@@ -14,9 +14,10 @@ const Guidelines = () => {
             <div className="!p-8 max-w-none text-gray-500 dark:text-gray-200">
               <div className="space-y-5">
                 <p className="leading-7">
-                  To protect all users on Hey and to prevent spam, we put some
-                  rules in place. Please read them carefully and remember them
-                  whenever you post something on Hey or change your account.
+                  To protect all users on Every1 and to prevent spam, we put
+                  some rules in place. Please read them carefully and remember
+                  them whenever you post something on Every1 or change your
+                  account.
                 </p>
               </div>
               {/* Safety begins */}
@@ -42,16 +43,16 @@ const Guidelines = () => {
               <H4 className="mt-8 mb-5">Nudity</H4>
               <div className="space-y-5">
                 <p className="leading-7">
-                  Hey is not a place to display, share or promote any form of
-                  the following types of content:
+                  Every1 is not a place to display, share or promote any form
+                  of the following types of content:
                 </p>
                 <ul className="list-inside list-disc space-y-2">
                   <li>Nudity</li>
                   <li>Sexual content</li>
                 </ul>
                 <p className="leading-7">
-                  Please try to keep Hey family-friendly (especially considering
-                  all images, videos, audio, and links).
+                  Please try to keep Every1 family-friendly (especially
+                  considering all images, videos, audio, and links).
                 </p>
               </div>
               {/* Nudity ends */}
@@ -59,7 +60,7 @@ const Guidelines = () => {
               <H4 className="mt-8 mb-5">Spam</H4>
               <div className="space-y-5">
                 <p className="leading-7">
-                  You are not allowed to use Hey as a platform to
+                  You are not allowed to use Every1 as a platform to
                 </p>
                 <ul className="list-inside list-disc space-y-2">
                   <li>Manipulate other users</li>
@@ -79,7 +80,7 @@ const Guidelines = () => {
               <H4 className="mt-8 mb-5">Impersonation</H4>
               <div className="space-y-5">
                 <p className="leading-7">
-                  You are not allowed to impersonate other people on Hey.
+                  You are not allowed to impersonate other people on Every1.
                 </p>
                 <p className="leading-7">
                   We understand that some of you like to create Accounts with
@@ -91,16 +92,16 @@ const Guidelines = () => {
                 </p>
                 <H4 className="mt-8 mb-5">Suspension</H4>
                 <p className="leading-7">
-                  Account suspension applies only to Hey and not to Lens.
-                  Decisions to suspend an account are made by the Hey team and
-                  are not automated.
+                  Account suspension applies only to Every1 and not to Lens.
+                  Decisions to suspend an account are made by the Every1 team
+                  and are not automated.
                 </p>
                 <p className="leading-7">
                   We reserve the right to take down any account that violates
                   these guidelines, with or without prior notice.
                 </p>
                 <p className="font-bold leading-7">
-                  This is a Hey-specific decision / feature and not a
+                  This is an Every1-specific decision / feature and not a
                   protocol-level decision / feature.
                 </p>
               </div>
