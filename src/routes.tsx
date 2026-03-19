@@ -1,10 +1,9 @@
-import { BrowserRouter, Route, Routes as RouterRoutes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes as RouterRoutes } from "react-router";
 import ViewAccount from "@/components/Account";
 import Bookmarks from "@/components/Bookmarks";
 import Layout from "@/components/Common/Layout";
 import Creators from "@/components/Creators";
 import ENS from "@/components/ENS";
-import Explore from "@/components/Explore";
 import ViewGroup from "@/components/Group";
 import GroupSettings from "@/components/Group/Settings";
 import { default as GroupMonetizeSettings } from "@/components/Group/Settings/Monetize";
@@ -45,7 +44,7 @@ const Routes = () => {
       <RouterRoutes>
         <Route element={<Layout />} path="/">
           <Route element={<Home />} index />
-          <Route element={<Explore />} path="explore" />
+          <Route element={<Navigate replace to="/" />} path="explore" />
           <Route element={<Creators />} path="creators" />
           <Route element={<Leaderboard />} path="leaderboard" />
           <Route element={<Swap />} path="swap" />

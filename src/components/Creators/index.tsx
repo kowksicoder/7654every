@@ -1,7 +1,15 @@
 import {
   ArrowTrendingDownIcon,
-  ArrowTrendingUpIcon
+  ArrowTrendingUpIcon,
+  FilmIcon,
+  MapIcon,
+  MusicalNoteIcon,
+  PaintBrushIcon,
+  SparklesIcon,
+  Squares2X2Icon,
+  TrophyIcon
 } from "@heroicons/react/24/solid";
+import type { ComponentType, SVGProps } from "react";
 import MetaTags from "@/components/Common/MetaTags";
 import { Card } from "@/components/Shared/UI";
 import cn from "@/helpers/cn";
@@ -357,10 +365,120 @@ const mockCreators: CreatorEntry[] = [
   }
 ];
 
-const statPills = [
-  `${mockCreators.length} mock creators`,
-  "Desktop leaderboard",
-  "Zora sync next"
+const creatorMobileStats: Record<string, { e1xp: string; holders: string }> = {
+  "@8bitbase": { e1xp: "10.4M", holders: "1.7K" },
+  "@aeongems": { e1xp: "6.4M", holders: "236" },
+  "@balajis": { e1xp: "84.2M", holders: "18.9K" },
+  "@bearmarketcoin": { e1xp: "7.7M", holders: "397" },
+  "@bouhiron": { e1xp: "6.6M", holders: "249" },
+  "@cc0company": { e1xp: "12.9M", holders: "2.4K" },
+  "@dexcheckai": { e1xp: "34.2M", holders: "1.5K" },
+  "@hojak": { e1xp: "11M", holders: "223" },
+  "@jessepollak": { e1xp: "196.7M", holders: "62.3K" },
+  "@kkn": { e1xp: "8.6M", holders: "2K" },
+  "@marketscoin": { e1xp: "6.1M", holders: "378" },
+  "@papoy": { e1xp: "8.9M", holders: "514" },
+  "@princeofcoins": { e1xp: "13.3M", holders: "1.9K" },
+  "@sfascinated": { e1xp: "18.4M", holders: "33.5K" },
+  "@skeetermcbeaver": { e1xp: "9.8M", holders: "2.8K" },
+  "@thebeastfs": { e1xp: "42.2M", holders: "24.8K" },
+  "@thenickshirley": { e1xp: "41.3M", holders: "17.9K" },
+  "@topbasetrending": { e1xp: "6.8M", holders: "1.9K" },
+  "@ugol": { e1xp: "5.7M", holders: "809" },
+  "@ugorreser": { e1xp: "42M", holders: "809" }
+};
+
+const mobileFilters: Array<{
+  Icon: ComponentType<SVGProps<SVGSVGElement>>;
+  active?: boolean;
+  label: string;
+}> = [
+  { Icon: Squares2X2Icon, active: true, label: "All" },
+  { Icon: MusicalNoteIcon, label: "Music" },
+  { Icon: PaintBrushIcon, label: "Art" },
+  { Icon: FilmIcon, label: "Movies" },
+  { Icon: SparklesIcon, label: "Pop-Culture" },
+  { Icon: TrophyIcon, label: "Sports" },
+  { Icon: MapIcon, label: "Travel" }
+];
+
+const parseCompactValue = (value: string) => {
+  const normalized = value.replace(/[$,]/g, "").trim().toLowerCase();
+  const multiplier = normalized.endsWith("b")
+    ? 1_000_000_000
+    : normalized.endsWith("m")
+      ? 1_000_000
+      : normalized.endsWith("k")
+        ? 1_000
+        : 1;
+  const base = Number.parseFloat(normalized.replace(/[bmk]$/i, ""));
+
+  return Number.isNaN(base) ? 0 : base * multiplier;
+};
+
+const formatCompactValue = (
+  value: number,
+  { currency = false }: { currency?: boolean } = {}
+) => {
+  if (value === 0) {
+    return currency ? "$0" : "0";
+  }
+
+  const absoluteValue = Math.abs(value);
+  const [scaledValue, suffix] =
+    absoluteValue >= 1_000_000_000
+      ? [value / 1_000_000_000, "B"]
+      : absoluteValue >= 1_000_000
+        ? [value / 1_000_000, "M"]
+        : absoluteValue >= 1_000
+          ? [value / 1_000, "K"]
+          : [value, ""];
+
+  const decimals = Math.abs(scaledValue) >= 100 ? 0 : Math.abs(scaledValue) >= 10 ? 1 : 2;
+  const formattedValue = scaledValue
+    .toFixed(decimals)
+    .replace(/\.0+$|(\.\d*[1-9])0+$/, "$1");
+
+  return `${currency ? "$" : ""}${formattedValue}${suffix}`;
+};
+
+const totalMarketCap = mockCreators.reduce(
+  (sum, creator) => sum + parseCompactValue(creator.marketCap),
+  0
+);
+
+const totalVolume = mockCreators.reduce(
+  (sum, creator) => sum + parseCompactValue(creator.volume),
+  0
+);
+
+const averageHolders =
+  Object.values(creatorMobileStats).reduce(
+    (sum, creator) => sum + parseCompactValue(creator.holders),
+    0
+  ) / Object.values(creatorMobileStats).length;
+
+const mobileOverviewCards = [
+  {
+    label: "Creators",
+    value: mockCreators.length.toString(),
+    valueClassName: "text-[#26dd86]"
+  },
+  {
+    label: "Market Cap",
+    value: formatCompactValue(totalMarketCap, { currency: true }),
+    valueClassName: "text-[#26dd86]"
+  },
+  {
+    label: "Earnings",
+    value: formatCompactValue(totalVolume, { currency: true }),
+    valueClassName: "text-[#26dd86]"
+  },
+  {
+    label: "Avg. Holders",
+    value: formatCompactValue(averageHolders),
+    valueClassName: "text-white"
+  }
 ];
 
 const getInitials = (name: string) =>
@@ -483,9 +601,128 @@ const TrendValue = ({
   );
 };
 
+const MobileOverviewCard = ({
+  centered = false,
+  compact = false,
+  label,
+  value,
+  valueClassName
+}: {
+  centered?: boolean;
+  compact?: boolean;
+  label: string;
+  value: string;
+  valueClassName: string;
+}) => (
+  <div
+    className={cn(
+      compact
+        ? "min-w-[5.4rem] shrink-0 rounded-[1.1rem] bg-[#171717] px-2.5 py-2"
+        : "min-w-[7.25rem] shrink-0 rounded-[1.35rem] bg-[#171717] px-3 py-2.5",
+      centered ? "text-center" : undefined
+    )}
+  >
+    <p
+      className={cn(
+        compact ? "text-[0.95rem]" : "text-lg",
+        "font-semibold tracking-tight",
+        valueClassName
+      )}
+    >
+      {value}
+    </p>
+    <p className={cn(compact ? "mt-0.5 text-[9px]" : "mt-0.5 text-[10px]", "font-medium text-[#a4a4a8]")}>
+      {label}
+    </p>
+  </div>
+);
+
+const MobileFilterChip = ({
+  Icon,
+  active,
+  compact = false,
+  label
+}: {
+  Icon: ComponentType<SVGProps<SVGSVGElement>>;
+  active?: boolean;
+  compact?: boolean;
+  label: string;
+}) => (
+  <button
+    className={cn(
+      compact
+        ? "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-colors"
+        : "inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-[13px] font-semibold transition-colors",
+      active
+        ? "bg-[#12c46b] text-white"
+        : "border border-[#262628] bg-[#141415] text-[#9f9fa5]"
+    )}
+    type="button"
+  >
+    <Icon className={compact ? "size-3.5" : "size-4"} />
+    <span>{label}</span>
+  </button>
+);
+
+const MobileMetric = ({
+  accent,
+  label,
+  value
+}: {
+  accent?: boolean;
+  label: string;
+  value: string;
+}) => (
+  <div className="min-w-0">
+    <p
+      className={cn(
+        "truncate text-[13px] font-semibold tracking-tight",
+        accent ? "text-[#ffbf34]" : "text-white"
+      )}
+    >
+      {value}
+    </p>
+    <p className="mt-1 text-[10px] font-medium text-[#8c8c92]">{label}</p>
+  </div>
+);
+
+const MobileCreatorCard = ({ creator }: { creator: CreatorEntry }) => {
+  const mobileStats = creatorMobileStats[creator.handle] ?? {
+    e1xp: formatCompactValue(parseCompactValue(creator.marketCap) * 3.1),
+    holders: formatCompactValue(parseCompactValue(creator.marketCap) / 40)
+  };
+
+  return (
+    <div className="rounded-[1.65rem] bg-[#171717] px-3.5 py-3 shadow-[0_22px_32px_-28px_rgba(0,0,0,0.98)] ring-1 ring-white/[0.03]">
+      <div className="grid grid-cols-[4.25rem_repeat(4,minmax(0,1fr))] items-center gap-3">
+        <div className="min-w-0">
+          <div
+            className={cn(
+              "mx-auto flex size-12 items-center justify-center rounded-full p-[2px]",
+              toneClasses[creator.avatarTone]
+            )}
+          >
+            <div className="flex size-full items-center justify-center rounded-full bg-[#101011] text-xs font-semibold text-white">
+              {getInitials(creator.name)}
+            </div>
+          </div>
+          <p className="mt-2 truncate text-[10px] font-medium text-[#9f9fa5]">
+            {creator.handle}
+          </p>
+        </div>
+
+        <MobileMetric label="Holders" value={mobileStats.holders} />
+        <MobileMetric label="M.Cap" value={creator.marketCap} />
+        <MobileMetric label="Vol" value={creator.volume} />
+        <MobileMetric accent label="E1XP" value={mobileStats.e1xp} />
+      </div>
+    </div>
+  );
+};
+
 const CreatorRow = ({ creator }: { creator: CreatorEntry }) => (
   <Card
-    className="mx-5 px-4 py-4 transition-colors hover:border-gray-300 hover:bg-gray-50/60 dark:hover:border-gray-600 dark:hover:bg-gray-950/60 md:mx-0 md:px-5"
+    className="mx-5 px-4 py-4 shadow-none transition-colors hover:border-gray-300 hover:bg-gray-50/60 dark:hover:border-gray-600 dark:hover:bg-gray-950/60 md:mx-0 md:px-5"
     forceRounded
   >
     <div className="grid gap-4 md:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1.2fr)] md:items-center">
@@ -561,53 +798,85 @@ const Creators = () => {
         description="A creator leaderboard mockup for Every1. Static data for now, with Zora integration coming later."
         title="Creators"
       />
-      <main className="mt-5 mb-16 min-w-0 flex-1 space-y-4 md:mb-5">
-        <Card
-          className="relative mx-5 overflow-hidden px-5 py-6 md:mx-0 md:px-6"
-          forceRounded
-        >
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-emerald-400/0 via-emerald-400/80 to-fuchsia-500/0" />
-          <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl space-y-2">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-gray-500">
-                Creator coins
-              </p>
-              <div className="space-y-1">
-                <h1 className="text-3xl font-semibold text-gray-950 dark:text-gray-50">
-                  Creators
-                </h1>
-                <p className="max-w-xl text-sm text-gray-600 dark:text-gray-400">
-                  A clean first pass for the creator board. It is static for now
-                  and ready for us to wire into Zora data next.
-                </p>
-              </div>
+      <main className="mt-0 mb-16 min-w-0 flex-1 md:mt-5 md:mb-5">
+        <section className="bg-[#0d0d0e] px-3 pb-6 pt-2.5 text-white md:hidden">
+          <div className="space-y-3.5">
+            <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5">
+              {mobileOverviewCards.map((card) => (
+                <MobileOverviewCard
+                  compact
+                  key={card.label}
+                  label={card.label}
+                  value={card.value}
+                  valueClassName={card.valueClassName}
+                />
+              ))}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {statPills.map((pill) => (
-                <span
-                  className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                  key={pill}
-                >
-                  {pill}
-                </span>
+
+            <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5">
+              {mobileFilters.map((filter) => (
+                <MobileFilterChip
+                  Icon={filter.Icon}
+                  active={filter.active}
+                  compact
+                  key={filter.label}
+                  label={filter.label}
+                />
+              ))}
+            </div>
+
+            <div className="space-y-2.5">
+              {mockCreators.map((creator) => (
+                <MobileCreatorCard creator={creator} key={creator.handle} />
               ))}
             </div>
           </div>
-        </Card>
+        </section>
 
-        <div className="hidden px-4 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 md:grid md:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1.2fr)] md:items-center md:px-5">
-          <span>Coin</span>
-          <span>Market cap</span>
-          <span>24h vol</span>
-          <span>Age</span>
-          <span>Recent drops</span>
-          <span>Past 24 hours</span>
-        </div>
+        <section className="hidden space-y-4 md:block">
+          <div className="space-y-3">
+            <div className="flex justify-center">
+              <div className="no-scrollbar flex flex-wrap justify-center gap-3 pb-1">
+                {mobileOverviewCards.map((card) => (
+                  <MobileOverviewCard
+                    centered
+                    key={card.label}
+                    label={card.label}
+                    value={card.value}
+                    valueClassName={card.valueClassName}
+                  />
+                ))}
+              </div>
+            </div>
 
-        <section className="space-y-3 pb-6">
-          {mockCreators.map((creator) => (
-            <CreatorRow creator={creator} key={creator.handle} />
-          ))}
+            <div className="flex justify-center">
+              <div className="no-scrollbar flex flex-wrap justify-center gap-2 pb-1">
+                {mobileFilters.map((filter) => (
+                  <MobileFilterChip
+                    Icon={filter.Icon}
+                    active={filter.active}
+                    key={filter.label}
+                    label={filter.label}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden px-4 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 md:grid md:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1.2fr)] md:items-center md:px-5">
+            <span>Coin</span>
+            <span>Market cap</span>
+            <span>24h vol</span>
+            <span>Age</span>
+            <span>Recent drops</span>
+            <span>Past 24 hours</span>
+          </div>
+
+          <section className="space-y-3 pb-6">
+            {mockCreators.map((creator) => (
+              <CreatorRow creator={creator} key={creator.handle} />
+            ))}
+          </section>
         </section>
       </main>
     </>

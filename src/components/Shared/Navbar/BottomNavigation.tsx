@@ -1,19 +1,18 @@
 import {
-  BellIcon,
-  GlobeAltIcon as GlobeOutline,
-  HomeIcon,
-  MagnifyingGlassIcon
+  ArrowsRightLeftIcon as SwapOutline,
+  CompassIcon as CompassOutline,
+  MagnifyingGlassIcon,
+  StarIcon as CreatorsOutline
 } from "@heroicons/react/24/outline";
 import {
-  BellIcon as BellIconSolid,
-  GlobeAltIcon as GlobeSolid,
-  HomeIcon as HomeIconSolid
+  ArrowsRightLeftIcon as SwapSolid,
+  CompassIcon as CompassSolid,
+  StarIcon as CreatorsSolid
 } from "@heroicons/react/24/solid";
 import type { MouseEvent, ReactNode } from "react";
 import { Link, useLocation } from "react-router";
 import { Image } from "@/components/Shared/UI";
 import getAvatar from "@/helpers//getAvatar";
-import useHasNewNotifications from "@/hooks/useHasNewNotifications";
 import { useMobileDrawerModalStore } from "@/store/non-persisted/modal/useMobileDrawerModalStore";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
 import MobileDrawerMenu from "./MobileDrawerMenu";
@@ -25,7 +24,6 @@ interface NavigationItemProps {
   solid: ReactNode;
   isActive: boolean;
   onClick?: (e: MouseEvent) => void;
-  showIndicator?: boolean;
 }
 
 const NavigationItem = ({
@@ -34,19 +32,15 @@ const NavigationItem = ({
   outline,
   solid,
   isActive,
-  onClick,
-  showIndicator
+  onClick
 }: NavigationItemProps) => (
   <Link
     aria-label={label}
-    className="relative mx-auto my-3"
+    className="relative flex flex-1 justify-center py-3"
     onClick={onClick}
     to={path}
   >
     {isActive ? solid : outline}
-    {showIndicator && (
-      <span className="absolute -top-1 -right-1 size-2 rounded-full bg-red-500" />
-    )}
   </Link>
 );
 
@@ -55,7 +49,6 @@ const BottomNavigation = () => {
   const { currentAccount } = useAccountStore();
   const { show: showMobileDrawer, setShow: setShowMobileDrawer } =
     useMobileDrawerModalStore();
-  const hasNewNotifications = useHasNewNotifications();
 
   const handleAccountClick = () => setShowMobileDrawer(true);
 
@@ -68,10 +61,10 @@ const BottomNavigation = () => {
 
   const navigationItems = [
     {
-      label: "Home",
-      outline: <HomeIcon className="size-6" />,
+      label: "Explore",
+      outline: <CompassOutline className="size-6" />,
       path: "/",
-      solid: <HomeIconSolid className="size-6" />
+      solid: <CompassSolid className="size-6" />
     },
     {
       label: "Search",
@@ -80,23 +73,23 @@ const BottomNavigation = () => {
       solid: <MagnifyingGlassIcon className="size-6" />
     },
     {
-      label: "Explore",
-      outline: <GlobeOutline className="size-6" />,
-      path: "/explore",
-      solid: <GlobeSolid className="size-6" />
+      label: "Swap",
+      outline: <SwapOutline className="size-6" />,
+      path: "/swap",
+      solid: <SwapSolid className="size-6" />
     },
     {
-      label: "Notifications",
-      outline: <BellIcon className="size-6" />,
-      path: "/notifications",
-      solid: <BellIconSolid className="size-6" />
+      label: "Creators",
+      outline: <CreatorsOutline className="size-6" />,
+      path: "/creators",
+      solid: <CreatorsSolid className="size-6" />
     }
   ];
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-[5] border-gray-200 border-t bg-white pb-safe md:hidden dark:border-gray-800 dark:bg-black">
       {showMobileDrawer && <MobileDrawerMenu />}
-      <div className="flex justify-between">
+      <div className="flex items-center justify-between gap-1 px-1">
         {navigationItems.map(({ path, label, outline, solid }) => (
           <NavigationItem
             isActive={pathname === path}
@@ -105,20 +98,19 @@ const BottomNavigation = () => {
             onClick={(e) => handleHomClick(path, e)}
             outline={outline}
             path={path}
-            showIndicator={hasNewNotifications && path === "/notifications"}
             solid={solid}
           />
         ))}
         {currentAccount && (
           <button
             aria-label="Your account"
-            className="m-auto h-fit"
+            className="flex flex-1 justify-center"
             onClick={handleAccountClick}
             type="button"
           >
             <Image
               alt={currentAccount.address}
-              className="m-0.5 size-6 rounded-full border border-gray-200 dark:border-gray-700"
+              className="size-6 rounded-full border border-gray-200 dark:border-gray-700"
               src={getAvatar(currentAccount)}
             />
           </button>

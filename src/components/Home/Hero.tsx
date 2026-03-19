@@ -15,7 +15,7 @@ const Hero = () => {
           Welcome to Every1
         </div>
         <div className="font-extrabold text-gray-200">
-          a social network built on Lens
+          a social feed powered by Zora
         </div>
       </div>
     </div>

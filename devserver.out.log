@@ -1,0 +1,38 @@
+
+> hey@0.0.0 dev C:\Users\MIKKI\3D Objects\hey\hey
+> vite dev --port 4783
+
+
+  [32m[1mVITE[22m v7.3.1[39m  [2mready in [0m[1m1375[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m4783[22m/[39m
+[2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+[2m8:35:56 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Home/WhoToFollowFeedBlock.tsx[22m
+[2m8:37:28 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Home/WhoToFollowFeedBlock.tsx[22m
+[2m8:38:14 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Home/WhoToFollowFeedBlock.tsx[22m
+[2m8:38:37 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Home/WhoToFollowFeedBlock.tsx[22m
+[2m8:39:09 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Home/WhoToFollowFeedBlock.tsx[22m
+[2m8:41:57 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Home/WhoToFollowFeedBlock.tsx[22m
+[2m8:42:39 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Shared/Navbar/MobileHeader.tsx[22m
+[2m8:43:41 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Shared/Navbar/BottomNavigation.tsx[22m
+[2m8:44:24 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Shared/Navbar/BottomNavigation.tsx[22m
+[2m8:47:22 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/routes.tsx, /src/styles.css?direct, /src/styles.css[22m
+[2m8:47:28 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Home/index.tsx, /src/styles.css?direct, /src/styles.css[22m
+[2m8:47:35 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Shared/Navbar/index.tsx[22m
+[2m8:47:41 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Shared/Navbar/index.tsx[22m
+[2m8:47:48 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Shared/Navbar/BottomNavigation.tsx[22m
+[2m8:47:54 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Shared/Navbar/BottomNavigation.tsx[22m
+[2m8:48:24 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Explore/index.tsx, /src/styles.css?direct, /src/styles.css[22m
+[2m8:48:24 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Explore/ExploreFeed.tsx[22m
+[2m8:49:14 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Shared/Navbar/index.tsx[22m
+[2m8:49:25 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Shared/Navbar/BottomNavigation.tsx[22m
+[2m8:50:12 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/styles.css?direct, /src/styles.css, /src/components/Shared/Navbar/MobileHeader.tsx[22m
+[2m8:51:48 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Leaderboard/index.tsx, /src/styles.css?direct, /src/styles.css[22m
+[2m8:53:53 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Leaderboard/index.tsx, /src/styles.css?direct, /src/styles.css[22m
+[2m8:54:08 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Leaderboard/index.tsx, /src/styles.css?direct, /src/styles.css[22m
+[2m8:55:21 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Leaderboard/index.tsx, /src/styles.css?direct, /src/styles.css[22m
+[2m8:55:58 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Leaderboard/index.tsx, /src/styles.css?direct, /src/styles.css[22m
+[2m8:57:15 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Creators/index.tsx, /src/styles.css?direct, /src/styles.css[22m
+[2m8:58:15 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Creators/index.tsx, /src/styles.css?direct, /src/styles.css[22m
+[2m9:00:15 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Creators/index.tsx, /src/styles.css?direct, /src/styles.css[22m
+[2m9:01:07 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/Creators/index.tsx, /src/styles.css?direct, /src/styles.css[22m

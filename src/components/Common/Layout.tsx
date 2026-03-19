@@ -8,6 +8,7 @@ import GlobalAlerts from "@/components/Shared/GlobalAlerts";
 import GlobalModals from "@/components/Shared/GlobalModals";
 import Navbar from "@/components/Shared/Navbar";
 import BottomNavigation from "@/components/Shared/Navbar/BottomNavigation";
+import MobileHeader from "@/components/Shared/Navbar/MobileHeader";
 import { Spinner } from "@/components/Shared/UI";
 import reloadAllTabs from "@/helpers/reloadAllTabs";
 import { useTheme } from "@/hooks/useTheme";
@@ -64,6 +65,7 @@ const Layout = () => {
       <GlobalModals />
       <GlobalAlerts />
       <ReloadTabsWatcher />
+      <MobileHeader />
       <div className="mx-auto flex w-full max-w-6xl items-start gap-x-8 px-0 md:px-5">
         <Navbar />
         <Outlet />

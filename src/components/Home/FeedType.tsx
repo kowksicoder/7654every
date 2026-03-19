@@ -1,16 +1,15 @@
-import New from "@/components/Shared/Badges/New";
 import { Tabs } from "@/components/Shared/UI";
 import { HomeFeedType } from "@/data/enums";
 import { useHomeTabStore } from "@/store/persisted/useHomeTabStore";
+import { zoraHomeFeedConfig } from "./zoraHomeFeedConfig";
 
 const FeedType = () => {
   const { feedType, setFeedType } = useHomeTabStore();
 
-  const tabs = [
-    { name: "Following", type: HomeFeedType.FOLLOWING },
-    { name: "Highlights", type: HomeFeedType.HIGHLIGHTS },
-    { name: "For You", suffix: <New />, type: HomeFeedType.FORYOU }
-  ];
+  const tabs = Object.entries(zoraHomeFeedConfig).map(([type, config]) => ({
+    name: config.label,
+    type
+  }));
 
   return (
     <Tabs

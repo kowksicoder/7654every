@@ -1,13 +1,13 @@
 import { useApolloClient } from "@apollo/client";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowsRightLeftIcon as SwapOutline,
   BellIcon as BellOutline,
   BoltIcon as StreaksOutline,
   BookmarkIcon as BookmarkOutline,
+  CompassIcon as CompassOutline,
   StarIcon as CreatorsOutline,
   FlagIcon as MissionsOutline,
-  GlobeAltIcon as GlobeOutline,
-  HomeIcon as HomeOutline,
   TrophyIcon as LeaderboardOutline,
   UserGroupIcon as UserGroupOutline
 } from "@heroicons/react/24/outline";
@@ -16,10 +16,9 @@ import {
   BellIcon as BellSolid,
   BoltIcon as StreaksSolid,
   BookmarkIcon as BookmarkSolid,
+  CompassIcon as CompassSolid,
   StarIcon as CreatorsSolid,
   FlagIcon as MissionsSolid,
-  GlobeAltIcon as GlobeSolid,
-  HomeIcon as HomeSolid,
   TrophyIcon as LeaderboardSolid,
   UserGroupIcon as UserGroupSolid
 } from "@heroicons/react/24/solid";
@@ -33,16 +32,13 @@ import {
 import { Link, useLocation } from "react-router";
 import evLogo from "@/assets/fonts/evlogo.jpg";
 import { Image, Spinner, Tooltip } from "@/components/Shared/UI";
+import { ZORA_HOME_FEED_QUERY_KEY } from "@/components/Home/zoraHomeFeedConfig";
 import useHasNewNotifications from "@/hooks/useHasNewNotifications";
 import {
   GroupsDocument,
   NotificationIndicatorDocument,
   NotificationsDocument,
-  PostBookmarksDocument,
-  PostsExploreDocument,
-  PostsForYouDocument,
-  TimelineDocument,
-  TimelineHighlightsDocument
+  PostBookmarksDocument
 } from "@/indexer/generated";
 import { useAuthModalStore } from "@/store/non-persisted/modal/useAuthModalStore";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
@@ -50,26 +46,15 @@ import SignedAccount from "./SignedAccount";
 
 const navigationItems = {
   "/": {
-    outline: <HomeOutline className="size-6" />,
-    refreshDocs: [
-      TimelineDocument,
-      TimelineHighlightsDocument,
-      PostsForYouDocument
-    ],
-    solid: <HomeSolid className="size-6" />,
-    title: "Home"
+    outline: <CompassOutline className="size-6" />,
+    solid: <CompassSolid className="size-6" />,
+    title: "Explore"
   },
   "/bookmarks": {
     outline: <BookmarkOutline className="size-6" />,
     refreshDocs: [PostBookmarksDocument],
     solid: <BookmarkSolid className="size-6" />,
     title: "Bookmarks"
-  },
-  "/explore": {
-    outline: <GlobeOutline className="size-6" />,
-    refreshDocs: [PostsExploreDocument],
-    solid: <GlobeSolid className="size-6" />,
-    title: "Explore"
   },
   "/creators": {
     outline: <CreatorsOutline className="size-6" />,
@@ -128,10 +113,10 @@ const NavItems = memo(({ isLoggedIn }: { isLoggedIn: boolean }) => {
   const { pathname } = useLocation();
   const hasNewNotifications = useHasNewNotifications();
   const client = useApolloClient();
+  const queryClient = useQueryClient();
   const [refreshingRoute, setRefreshingRoute] = useState<string | null>(null);
   const routes = [
     "/",
-    "/explore",
     "/creators",
     "/leaderboard",
     "/swap",
@@ -167,9 +152,29 @@ const NavItems = memo(({ isLoggedIn }: { isLoggedIn: boolean }) => {
         const handleClick = async (e: MouseEvent<HTMLAnchorElement>) => {
           const item = navigationItems[route as keyof typeof navigationItems];
           const isSameRoute = pathname === route;
-          if (!isSameRoute || !("refreshDocs" in item) || !item.refreshDocs) {
+
+          if (!isSameRoute) {
             return;
           }
+
+          if (route === "/") {
+            e.preventDefault();
+            window.scrollTo(0, 0);
+            setRefreshingRoute(route);
+            try {
+              await queryClient.invalidateQueries({
+                queryKey: [ZORA_HOME_FEED_QUERY_KEY]
+              });
+            } finally {
+              setRefreshingRoute(null);
+            }
+            return;
+          }
+
+          if (!("refreshDocs" in item) || !item.refreshDocs) {
+            return;
+          }
+
           e.preventDefault();
           window.scrollTo(0, 0);
           setRefreshingRoute(route);
