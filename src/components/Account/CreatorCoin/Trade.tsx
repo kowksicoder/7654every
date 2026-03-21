@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import type { GetCoinResponse } from "@zoralabs/coins-sdk";
 import {
   createTradeCall,
@@ -21,7 +22,14 @@ import { useAccount, useConfig, useWalletClient } from "wagmi";
 import { getWalletClient } from "wagmi/actions";
 import { Button, Image, Input, Tabs, Tooltip } from "@/components/Shared/UI";
 import { BASE_RPC_URL } from "@/data/constants";
+import {
+  EVERY1_NOTIFICATION_COUNT_QUERY_KEY,
+  EVERY1_NOTIFICATIONS_QUERY_KEY,
+  EVERY1_REFERRAL_DASHBOARD_QUERY_KEY,
+  recordReferralTradeReward
+} from "@/helpers/every1";
 import useHandleWrongNetwork from "@/hooks/useHandleWrongNetwork";
+import { useEvery1Store } from "@/store/persisted/useEvery1Store";
 
 interface TradeModalProps {
   coin: NonNullable<GetCoinResponse["zora20Token"]>;
@@ -33,6 +41,8 @@ type Mode = "buy" | "sell";
 const Trade = ({ coin, onClose }: TradeModalProps) => {
   const { address } = useAccount();
   const config = useConfig();
+  const queryClient = useQueryClient();
+  const { profile } = useEvery1Store();
   const { data: walletClient } = useWalletClient({ chainId: base.id });
   const publicClient = useMemo(
     () =>
@@ -128,14 +138,61 @@ const Trade = ({ coin, onClose }: TradeModalProps) => {
         return toast.error("Please switch to Base network");
       }
 
-      await tradeCoin({
+      const receipt = await tradeCoin({
         account: client.account,
         publicClient,
         tradeParameters: params,
         validateTransaction: false,
         walletClient: client
       });
-      toast.success("Trade submitted");
+
+      toast.success("Trade completed");
+
+      if (profile?.id) {
+        try {
+          const quotedAmountOut = estimatedOut
+            ? mode === "buy"
+              ? Number(formatUnits(BigInt(estimatedOut), tokenDecimals))
+              : Number(formatEther(BigInt(estimatedOut)))
+            : 0;
+
+          const rewardResult = await recordReferralTradeReward({
+            chainId: base.id,
+            coinAddress: coin.address,
+            coinSymbol: coin.symbol || coin.name || "COIN",
+            profileId: profile.id,
+            tradeAmountIn: Number(amount),
+            tradeAmountOut: quotedAmountOut,
+            tradeSide: mode,
+            txHash: receipt.transactionHash
+          });
+
+          if (rewardResult.rewardGranted) {
+            toast.success("Referral reward unlocked", {
+              description: `+${Number(rewardResult.rewardAmount || 0).toFixed(
+                4
+              )} ${rewardResult.rewardSymbol} and +${
+                rewardResult.e1xpAwarded || 50
+              } E1XP`
+            });
+
+            await Promise.all([
+              queryClient.invalidateQueries({
+                queryKey: [EVERY1_REFERRAL_DASHBOARD_QUERY_KEY, profile.id]
+              }),
+              queryClient.invalidateQueries({
+                queryKey: [EVERY1_NOTIFICATIONS_QUERY_KEY, profile.id]
+              }),
+              queryClient.invalidateQueries({
+                queryKey: [EVERY1_NOTIFICATION_COUNT_QUERY_KEY, profile.id]
+              })
+            ]);
+          }
+        } catch (rewardError) {
+          console.error("Failed to record referral reward", rewardError);
+        }
+      }
+
       onClose();
     } catch {
       toast.error("Trade failed");

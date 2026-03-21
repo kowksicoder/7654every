@@ -1,7 +1,6 @@
 import {
   AdjustmentsHorizontalIcon,
   ArrowRightIcon,
-  CurrencyDollarIcon,
   PaintBrushIcon
 } from "@heroicons/react/24/outline";
 import { Link, useParams } from "react-router";
@@ -17,11 +16,6 @@ const GroupSettings = () => {
       icon: <PaintBrushIcon className="size-5" />,
       title: "Personalize",
       url: `/g/${address}/settings/personalize`
-    },
-    {
-      icon: <CurrencyDollarIcon className="size-5" />,
-      title: "Monetize",
-      url: `/g/${address}/settings/monetize`
     },
     {
       icon: <AdjustmentsHorizontalIcon className="size-5" />,

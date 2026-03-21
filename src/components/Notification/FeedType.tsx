@@ -10,11 +10,10 @@ interface FeedTypeProps {
 const FeedType = ({ feedType, setFeedType }: FeedTypeProps) => {
   const tabs = [
     { name: "All", type: NotificationFeedType.All },
-    { name: "Mentions", type: NotificationFeedType.Mentions },
-    { name: "Comments", type: NotificationFeedType.Comments },
-    { name: "Likes", type: NotificationFeedType.Likes },
-    { name: "Actions", type: NotificationFeedType.PostActions },
-    { name: "Rewards", type: NotificationFeedType.Rewards }
+    { name: "Activity", type: NotificationFeedType.Activity },
+    { name: "Referrals", type: NotificationFeedType.Referrals },
+    { name: "Rewards", type: NotificationFeedType.Rewards },
+    { name: "System", type: NotificationFeedType.System }
   ];
 
   return (
@@ -22,6 +21,7 @@ const FeedType = ({ feedType, setFeedType }: FeedTypeProps) => {
       active={feedType}
       className="mx-5 mb-5 md:mx-0"
       layoutId="notification_tab"
+      mobileScrollable
       setActive={(type) => {
         const nextType = type as NotificationFeedType;
         setFeedType(nextType);

@@ -1,6 +1,6 @@
 import { type MouseEvent, useCallback } from "react";
+import evLogo from "@/assets/fonts/evlogo.jpg";
 import { Button } from "@/components/Shared/UI";
-import { STATIC_IMAGES_URL } from "@/data/constants";
 import { useAuthModalStore } from "@/store/non-persisted/modal/useAuthModalStore";
 
 interface LoginButtonProps {
@@ -27,11 +27,11 @@ const LoginButton = ({
       className={className}
       icon={
         <img
-          alt="Lens Logo"
-          className="mr-0.5 h-3"
-          height={12}
-          src={`${STATIC_IMAGES_URL}/brands/lens.svg`}
-          width={19}
+          alt="Every1 Logo"
+          className="mr-1 size-4 rounded-md object-cover"
+          height={16}
+          src={evLogo}
+          width={16}
         />
       }
       onClick={handleClick}

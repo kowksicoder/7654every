@@ -1,0 +1,2 @@
+-- Intentionally blank.
+-- Seed data for non-onchain tables can be added here as the schema grows.

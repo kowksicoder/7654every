@@ -1,7 +1,15 @@
 export enum HomeFeedType {
   FOLLOWING = "FOLLOWING",
   FORYOU = "FORYOU",
-  HIGHLIGHTS = "HIGHLIGHTS"
+  HIGHLIGHTS = "HIGHLIGHTS",
+  SPORTS = "SPORTS",
+  LIFESTYLE = "LIFESTYLE",
+  POP_CULTURE = "POP_CULTURE"
+}
+
+export enum HomeFeedView {
+  LIST = "LIST",
+  GRID = "GRID"
 }
 
 export enum AccountFeedType {
@@ -13,11 +21,10 @@ export enum AccountFeedType {
 
 export enum NotificationFeedType {
   All = "ALL",
-  PostActions = "POST_ACTIONS",
-  Comments = "COMMENTS",
-  Likes = "LIKES",
-  Mentions = "MENTIONS",
-  Rewards = "REWARDS"
+  Activity = "ACTIVITY",
+  Referrals = "REFERRALS",
+  Rewards = "REWARDS",
+  System = "SYSTEM"
 }
 
 export enum GroupsFeedType {

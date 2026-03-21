@@ -26,6 +26,7 @@ import Privacy from "@/components/Pages/Privacy";
 import Support from "@/components/Pages/Support";
 import Terms from "@/components/Pages/Terms";
 import ViewPost from "@/components/Post";
+import Referrals from "@/components/Referrals";
 import Search from "@/components/Search";
 import AccountSettings from "@/components/Settings";
 import BlockedSettings from "@/components/Settings/Blocked";
@@ -39,6 +40,8 @@ import ProSettings from "@/components/Settings/Pro";
 import SessionsSettings from "@/components/Settings/Sessions";
 import UsernameSettings from "@/components/Settings/Username";
 import Custom404 from "@/components/Shared/404";
+import Showcase from "@/components/Showcase";
+import ShowcaseDetail from "@/components/Showcase/Detail";
 import Streaks from "@/components/Streaks";
 import Swap from "@/components/Swap";
 import RewardsSettings from "./components/Settings/Rewards";
@@ -52,9 +55,13 @@ const Routes = () => {
         <Route element={<Layout />} path="/">
           <Route element={<Home />} index />
           <Route element={<Navigate replace to="/" />} path="explore" />
+          <Route element={<FundsSettings />} path="wallet" />
           <Route element={<Creators />} path="creators" />
           <Route element={<Leaderboard />} path="leaderboard" />
+          <Route element={<Showcase />} path="showcase" />
+          <Route element={<ShowcaseDetail />} path="showcase/:slug" />
           <Route element={<Swap />} path="swap" />
+          <Route element={<Referrals />} path="referrals" />
           <Route element={<Missions />} path="missions" />
           <Route element={<Streaks />} path="streaks" />
           <Route element={<Search />} path="search" />
@@ -92,7 +99,7 @@ const Routes = () => {
             <Route element={<RewardsSettings />} path="rewards" />
             <Route element={<BlockedSettings />} path="blocked" />
             <Route element={<DeveloperSettings />} path="developer" />
-            <Route element={<FundsSettings />} path="funds" />
+            <Route element={<Navigate replace to="/wallet" />} path="funds" />
             <Route element={<ManagerSettings />} path="manager" />
             <Route element={<SessionsSettings />} path="sessions" />
             <Route element={<UsernameSettings />} path="username" />

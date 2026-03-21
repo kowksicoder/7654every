@@ -15,6 +15,9 @@ interface TokenOperationProps {
   successMessage: string;
   value: string;
   refetch: () => void;
+  className?: string;
+  outline?: boolean;
+  size?: "sm" | "md" | "lg";
 }
 
 const TokenOperation = ({
@@ -25,7 +28,10 @@ const TokenOperation = ({
   title,
   successMessage,
   value,
-  refetch
+  refetch,
+  className,
+  outline = true,
+  size = "sm"
 }: TokenOperationProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -75,11 +81,12 @@ const TokenOperation = ({
   return (
     <>
       <Button
+        className={className}
         disabled={isSubmitting || inputValue === "0"}
         loading={isSubmitting}
         onClick={() => setShowModal(true)}
-        outline
-        size="sm"
+        outline={outline}
+        size={size}
       >
         {buttonLabel}
       </Button>

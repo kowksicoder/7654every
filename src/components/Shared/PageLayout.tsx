@@ -48,15 +48,14 @@ const PageLayout = ({
     <>
       <MetaTags description={description} title={title} />
       <div
-        className={cn("mt-5 mb-16 flex-1 min-w-0 w-full space-y-5 md:mb-5", {
+        className={cn("mt-5 mb-16 w-full min-w-0 flex-1 space-y-5 md:mb-5", {
           "mt-0 md:mt-5": zeroTopMargin
         })}
       >
         <AuthButtons
           className={cn(
             { "mt-5": zeroTopMargin },
-            "w-full md:w-[22.5rem]",
-            "ml-auto px-5 md:px-0 lg:hidden"
+            "hidden w-full md:ml-auto md:flex md:w-[22.5rem] md:px-0 lg:hidden"
           )}
         />
         {children}

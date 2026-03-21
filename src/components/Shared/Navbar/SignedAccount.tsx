@@ -3,9 +3,7 @@ import { Link } from "react-router";
 import AccountLink from "@/components/Shared/Account/AccountLink";
 import MenuTransition from "@/components/Shared/MenuTransition";
 import Logout from "@/components/Shared/Navbar/NavItems/Logout";
-import Rewards from "@/components/Shared/Navbar/NavItems/Rewards";
 import Settings from "@/components/Shared/Navbar/NavItems/Settings";
-import SwitchAccount from "@/components/Shared/Navbar/NavItems/SwitchAccount";
 import ThemeSwitch from "@/components/Shared/Navbar/NavItems/ThemeSwitch";
 import YourAccount from "@/components/Shared/Navbar/NavItems/YourAccount";
 import { Image } from "@/components/Shared/UI";
@@ -50,28 +48,11 @@ const SignedAccount = () => {
             className={({ focus }: { focus: boolean }) =>
               cn({ "dropdown-active": focus }, "menu-item")
             }
-            to="/settings/rewards"
-          >
-            <Rewards />
-          </MenuItem>
-          <MenuItem
-            as={Link}
-            className={({ focus }: { focus: boolean }) =>
-              cn({ "dropdown-active": focus }, "menu-item")
-            }
             to="/settings"
           >
             <Settings />
           </MenuItem>
           <div className="divider" />
-          <MenuItem
-            as="div"
-            className={({ focus }) =>
-              cn({ "dropdown-active": focus }, "m-2 rounded-lg")
-            }
-          >
-            <SwitchAccount />
-          </MenuItem>
           <MenuItem
             as="div"
             className={({ focus }) =>

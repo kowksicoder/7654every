@@ -1,13 +1,8 @@
 import {
   ArrowRightIcon,
   AtSymbolIcon,
-  CodeBracketIcon,
   CreditCardIcon,
-  CurrencyDollarIcon,
   FingerPrintIcon,
-  GiftIcon,
-  GlobeAltIcon,
-  NoSymbolIcon,
   PaintBrushIcon
 } from "@heroicons/react/24/outline";
 import { Link } from "react-router";
@@ -33,24 +28,9 @@ const AccountSettings = () => {
       url: "/settings/personalize"
     },
     {
-      icon: <CurrencyDollarIcon className="size-5" />,
-      title: "Monetize",
-      url: "/settings/monetize"
-    },
-    {
-      icon: <CurrencyDollarIcon className="size-5" />,
-      title: "Creator Coin",
-      url: "/settings/creatorcoin"
-    },
-    {
-      icon: <GiftIcon className="size-5" />,
-      title: "Rewards",
-      url: "/settings/rewards"
-    },
-    {
       icon: <CreditCardIcon className="size-5" />,
-      title: "Funds",
-      url: "/settings/funds"
+      title: "Wallet",
+      url: "/wallet"
     },
     {
       icon: <AtSymbolIcon className="size-5" />,
@@ -61,21 +41,6 @@ const AccountSettings = () => {
       icon: <FingerPrintIcon className="size-5" />,
       title: "Manager",
       url: "/settings/manager"
-    },
-    {
-      icon: <GlobeAltIcon className="size-5" />,
-      title: "Sessions",
-      url: "/settings/sessions"
-    },
-    {
-      icon: <NoSymbolIcon className="size-5" />,
-      title: "Blocked accounts",
-      url: "/settings/blocked"
-    },
-    {
-      icon: <CodeBracketIcon className="size-5" />,
-      title: "Developer",
-      url: "/settings/developer"
     }
   ];
 

@@ -64,15 +64,15 @@ const SuggestionCard = ({ item }: { item: ZoraFeedItem }) => {
             className="size-full rounded-full object-cover"
             src={getCreatorAvatar(item)}
           />
-          <span className="absolute right-[-0.18rem] bottom-[-0.18rem] inline-flex size-3.5 items-center justify-center rounded-full bg-gray-950 text-[10px] font-bold leading-none text-white ring-2 ring-[#1b1b1b] md:right-[-0.05rem] md:bottom-[-0.05rem] md:size-5 md:text-xs">
+          <span className="absolute right-[-0.18rem] bottom-[-0.18rem] inline-flex size-3.5 items-center justify-center rounded-full bg-gray-950 font-bold text-[10px] text-white leading-none ring-2 ring-[#1b1b1b] md:right-[-0.05rem] md:bottom-[-0.05rem] md:size-5 md:text-xs">
             +
           </span>
         </div>
 
-        <div className="absolute right-2 bottom-2 left-2 hidden md:block md:right-3 md:bottom-3 md:left-3">
+        <div className="absolute right-2 bottom-2 left-2 hidden md:right-3 md:bottom-3 md:left-3 md:block">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-[15px] font-semibold text-white">
+              <p className="truncate font-semibold text-[15px] text-white">
                 {item.symbol ? `$${item.symbol}` : item.name}
               </p>
               <p className="mt-1 truncate text-[12px] text-white/70">
@@ -82,7 +82,7 @@ const SuggestionCard = ({ item }: { item: ZoraFeedItem }) => {
 
             <span
               className={cn(
-                "inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                "inline-flex shrink-0 items-center rounded-full px-2.5 py-1 font-semibold text-[11px]",
                 positive
                   ? "bg-emerald-400/20 text-emerald-200"
                   : "bg-rose-400/20 text-rose-200"
@@ -95,13 +95,13 @@ const SuggestionCard = ({ item }: { item: ZoraFeedItem }) => {
       </div>
 
       <div className="pt-2 md:hidden">
-        <p className="overflow-hidden text-[15px] leading-5 font-semibold text-gray-950 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1] dark:text-white">
+        <p className="overflow-hidden font-semibold text-[15px] text-gray-950 leading-5 [-webkit-box-orient:vertical] [-webkit-line-clamp:1] [display:-webkit-box] dark:text-white">
           {item.symbol ? `$${item.symbol}` : item.name}
         </p>
         <div className="mt-1">
           <span
             className={cn(
-              "inline-flex max-w-full items-center rounded-full px-2 py-1 text-[10px] font-semibold",
+              "inline-flex max-w-full items-center rounded-full px-2 py-1 font-semibold text-[10px]",
               positive
                 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200"
                 : "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200"
@@ -124,12 +124,12 @@ const SuggestionListItem = ({ item }: { item: ZoraFeedItem }) => (
           className="size-12 rounded-full object-cover"
           src={getCreatorAvatar(item)}
         />
-        <span className="absolute right-0 bottom-0 inline-flex size-4 items-center justify-center rounded-full bg-gray-950 text-[11px] font-bold leading-none text-white ring-2 ring-gray-100 dark:bg-white dark:text-black dark:ring-[#151515]">
+        <span className="absolute right-0 bottom-0 inline-flex size-4 items-center justify-center rounded-full bg-gray-950 font-bold text-[11px] text-white leading-none ring-2 ring-gray-100 dark:bg-white dark:text-black dark:ring-[#151515]">
           +
         </span>
       </div>
       <div className="min-w-0">
-        <p className="truncate text-[15px] font-semibold text-gray-950 dark:text-white">
+        <p className="truncate font-semibold text-[15px] text-gray-950 dark:text-white">
           {item.symbol ? `$${item.symbol}` : item.name}
         </p>
         <p className="mt-0.5 truncate text-[13px] text-gray-500 dark:text-white/55">
@@ -139,7 +139,7 @@ const SuggestionListItem = ({ item }: { item: ZoraFeedItem }) => (
     </div>
 
     <button
-      className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-gray-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
+      className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-gray-950 px-4 py-2 font-semibold text-sm text-white transition-colors hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
       type="button"
     >
       Follow
@@ -186,7 +186,9 @@ const SuggestionsModal = ({
             </div>
 
             <div className="px-5 pt-4 pb-3 text-center">
-              <h3 className="text-2xl font-semibold tracking-tight">Who to follow</h3>
+              <h3 className="font-semibold text-lg tracking-tight md:text-2xl">
+                Who to follow
+              </h3>
             </div>
 
             <div className="max-h-[70vh] overflow-y-auto px-4 pb-4">
@@ -236,11 +238,11 @@ const WhoToFollowFeedBlock = ({
     <>
       <section className="-mx-4 bg-white px-4 py-2.5 md:mx-0 md:bg-transparent md:px-1 md:py-4 dark:bg-black">
         <div className="mb-1.5 flex items-center justify-between gap-2 md:mb-3 md:gap-4">
-          <h2 className="text-[14px] leading-none font-semibold tracking-tight text-gray-950 md:text-2xl md:text-gray-950 dark:text-white">
+          <h2 className="font-semibold text-[14px] text-gray-950 leading-none tracking-tight md:text-2xl md:text-gray-950 dark:text-white">
             Who to follow
           </h2>
           <button
-            className="shrink-0 text-[11px] leading-none font-semibold text-gray-500 transition-colors hover:text-gray-950 md:text-sm md:text-gray-500 md:hover:text-gray-950 dark:text-white/65 dark:hover:text-white"
+            className="shrink-0 font-semibold text-[11px] text-gray-500 leading-none transition-colors hover:text-gray-950 md:text-gray-500 md:text-sm md:hover:text-gray-950 dark:text-white/65 dark:hover:text-white"
             onClick={() => setShowAll(true)}
             type="button"
           >
@@ -248,7 +250,7 @@ const WhoToFollowFeedBlock = ({
           </button>
         </div>
 
-        <div className="flex gap-2.5 overflow-x-auto pb-0.5 no-scrollbar md:-mx-1 md:gap-3 md:px-1 md:pb-1">
+        <div className="no-scrollbar flex gap-2.5 overflow-x-auto pb-0.5 md:-mx-1 md:gap-3 md:px-1 md:pb-1">
           {railSuggestions.map((item) => (
             <SuggestionCard item={item} key={item.id} />
           ))}

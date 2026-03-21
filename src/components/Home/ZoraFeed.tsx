@@ -3,22 +3,23 @@ import {
   FireIcon,
   SparklesIcon
 } from "@heroicons/react/24/outline";
-import { setApiKey } from "@zoralabs/coins-sdk";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { setApiKey } from "@zoralabs/coins-sdk";
 import { Fragment, useCallback, useMemo, useState } from "react";
 import { EmptyState, ErrorMessage, Spinner } from "@/components/Shared/UI";
-import { HomeFeedType } from "@/data/enums";
+import { HomeFeedType, HomeFeedView } from "@/data/enums";
+import cn from "@/helpers/cn";
 import getZoraApiKey from "@/helpers/getZoraApiKey";
 import useLoadMoreOnIntersect from "@/hooks/useLoadMoreOnIntersect";
 import { useHomeTabStore } from "@/store/persisted/useHomeTabStore";
-import ZoraPostCard from "./ZoraPostCard";
-import ZoraFeedShimmer from "./ZoraFeedShimmer";
-import ZoraPostMobileViewer from "./ZoraPostMobileViewer";
 import WhoToFollowFeedBlock from "./WhoToFollowFeedBlock";
+import ZoraFeedShimmer from "./ZoraFeedShimmer";
+import ZoraPostCard from "./ZoraPostCard";
+import ZoraPostMobileViewer from "./ZoraPostMobileViewer";
 import {
   ZORA_HOME_FEED_QUERY_KEY,
-  zoraHomeFeedConfig,
-  type ZoraFeedItem
+  type ZoraFeedItem,
+  zoraHomeFeedConfig
 } from "./zoraHomeFeedConfig";
 
 const zoraApiKey = getZoraApiKey();
@@ -33,11 +34,14 @@ interface ZoraFeedPage {
 }
 
 const getEmptyIcon = (feedType: HomeFeedType) => {
-  if (feedType === HomeFeedType.HIGHLIGHTS) {
+  if (
+    feedType === HomeFeedType.HIGHLIGHTS ||
+    feedType === HomeFeedType.POP_CULTURE
+  ) {
     return <SparklesIcon className="size-8" />;
   }
 
-  if (feedType === HomeFeedType.FORYOU) {
+  if (feedType === HomeFeedType.FORYOU || feedType === HomeFeedType.LIFESTYLE) {
     return <ArrowTrendingUpIcon className="size-8" />;
   }
 
@@ -45,9 +49,12 @@ const getEmptyIcon = (feedType: HomeFeedType) => {
 };
 
 const ZoraFeed = () => {
-  const { feedType } = useHomeTabStore();
+  const { feedType, viewMode } = useHomeTabStore();
   const currentFeed = zoraHomeFeedConfig[feedType];
-  const [selectedPostIndex, setSelectedPostIndex] = useState<number | null>(null);
+  const [selectedPostIndex, setSelectedPostIndex] = useState<number | null>(
+    null
+  );
+  const isGridView = viewMode === HomeFeedView.GRID;
 
   const {
     data,
@@ -104,7 +111,10 @@ const ZoraFeed = () => {
       }
 
       seen.add(key);
-      return Boolean(item.creatorProfile?.avatar?.previewImage?.medium || item.mediaContent?.previewImage?.medium);
+      return Boolean(
+        item.creatorProfile?.avatar?.previewImage?.medium ||
+          item.mediaContent?.previewImage?.medium
+      );
     });
   }, [items]);
 
@@ -129,7 +139,10 @@ const ZoraFeed = () => {
 
   const loadMoreRef = useLoadMoreOnIntersect(handleLoadMore);
   const handleOpenMobileView = useCallback((index: number) => {
-    if (typeof window === "undefined" || !window.matchMedia("(max-width: 767px)").matches) {
+    if (
+      typeof window === "undefined" ||
+      !window.matchMedia("(max-width: 767px)").matches
+    ) {
       return;
     }
 
@@ -137,7 +150,7 @@ const ZoraFeed = () => {
   }, []);
 
   if (isLoading) {
-    return <ZoraFeedShimmer />;
+    return <ZoraFeedShimmer viewMode={viewMode} />;
   }
 
   if (error) {
@@ -155,24 +168,46 @@ const ZoraFeed = () => {
 
   return (
     <>
-      <section className="min-w-0 overflow-x-hidden space-y-3 pb-5">
-        {items.map((item, index) => (
-          <Fragment key={item.id}>
-            <ZoraPostCard
-              item={item}
-              onOpenMobileView={() => handleOpenMobileView(index)}
-            />
-            {(index + 1) % 3 === 0 && suggestions.length >= 4 ? (
-              <WhoToFollowFeedBlock
-                startIndex={getSuggestionStartIndex(index)}
-                suggestions={suggestions}
+      <section
+        className={cn(
+          "min-w-0 overflow-x-hidden pb-5",
+          isGridView
+            ? "grid grid-cols-2 gap-3 px-4 md:grid-cols-3 md:px-0"
+            : "space-y-3"
+        )}
+      >
+        {isGridView
+          ? items.map((item, index) => (
+              <ZoraPostCard
+                item={item}
+                key={item.id}
+                onOpenMobileView={() => handleOpenMobileView(index)}
+                viewMode={viewMode}
               />
-            ) : null}
-          </Fragment>
-        ))}
+            ))
+          : items.map((item, index) => (
+              <Fragment key={item.id}>
+                <ZoraPostCard
+                  item={item}
+                  onOpenMobileView={() => handleOpenMobileView(index)}
+                  viewMode={viewMode}
+                />
+                {(index + 1) % 3 === 0 && suggestions.length >= 4 ? (
+                  <WhoToFollowFeedBlock
+                    startIndex={getSuggestionStartIndex(index)}
+                    suggestions={suggestions}
+                  />
+                ) : null}
+              </Fragment>
+            ))}
 
         {hasNextPage ? (
-          <div className="flex justify-center px-5 py-4 md:px-0">
+          <div
+            className={cn(
+              "flex justify-center py-4",
+              isGridView ? "col-span-full px-0" : "px-5 md:px-0"
+            )}
+          >
             <span ref={loadMoreRef} />
             {isFetchingNextPage ? <Spinner size="sm" /> : null}
           </div>

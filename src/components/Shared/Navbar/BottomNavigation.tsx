@@ -1,25 +1,29 @@
 import {
-  MapIcon as CompassOutline,
   PlusCircleIcon as CreateOutline,
   StarIcon as CreatorsOutline,
   MagnifyingGlassIcon,
   ArrowsRightLeftIcon as SwapOutline
 } from "@heroicons/react/24/outline";
 import {
-  MapIcon as CompassSolid,
   PlusCircleIcon as CreateSolid,
   StarIcon as CreatorsSolid,
   ArrowsRightLeftIcon as SwapSolid
 } from "@heroicons/react/24/solid";
 import type { MouseEvent, ReactNode } from "react";
 import { Link, useLocation } from "react-router";
+import {
+  CompassExploreOutlineIcon,
+  CompassExploreSolidIcon
+} from "@/components/Shared/Icons/CompassExploreIcon";
 import { Image } from "@/components/Shared/UI";
 import getAvatar from "@/helpers//getAvatar";
+import useEvery1MobileNavBadgeCounts from "@/hooks/useEvery1MobileNavBadgeCounts";
 import { useMobileDrawerModalStore } from "@/store/non-persisted/modal/useMobileDrawerModalStore";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
 import MobileDrawerMenu from "./MobileDrawerMenu";
 
 interface NavigationItemProps {
+  badgeCount?: number;
   path: string;
   label: string;
   outline: ReactNode;
@@ -29,6 +33,7 @@ interface NavigationItemProps {
 }
 
 const NavigationItem = ({
+  badgeCount = 0,
   path,
   label,
   outline,
@@ -38,17 +43,34 @@ const NavigationItem = ({
 }: NavigationItemProps) => (
   <Link
     aria-label={label}
-    className="relative flex flex-1 justify-center py-3"
+    className="relative flex flex-1 flex-col items-center justify-center gap-1 py-2"
     onClick={onClick}
     to={path}
   >
-    {isActive ? solid : outline}
+    <span className="relative">
+      {isActive ? solid : outline}
+      {badgeCount > 0 ? (
+        <span className="absolute -top-1.5 -right-2 min-w-4 rounded-full border border-white bg-pink-500 px-1 text-center font-semibold text-[10px] text-white leading-4 dark:border-gray-950">
+          {badgeCount > 9 ? "9+" : badgeCount}
+        </span>
+      ) : null}
+    </span>
+    <span
+      className={`max-w-full truncate px-1 font-medium text-[9px] leading-none ${
+        isActive
+          ? "text-gray-950 dark:text-white"
+          : "text-gray-500 dark:text-gray-400"
+      }`}
+    >
+      {label}
+    </span>
   </Link>
 );
 
 const BottomNavigation = () => {
   const { pathname } = useLocation();
   const { currentAccount } = useAccountStore();
+  const { creatorsCount, exploreCount } = useEvery1MobileNavBadgeCounts();
   const { show: showMobileDrawer, setShow: setShowMobileDrawer } =
     useMobileDrawerModalStore();
 
@@ -64,9 +86,9 @@ const BottomNavigation = () => {
   const navigationItems = [
     {
       label: "Explore",
-      outline: <CompassOutline className="size-6" />,
+      outline: <CompassExploreOutlineIcon className="size-6" />,
       path: "/",
-      solid: <CompassSolid className="size-6" />
+      solid: <CompassExploreSolidIcon className="size-6" />
     },
     {
       label: "Search",
@@ -95,11 +117,22 @@ const BottomNavigation = () => {
   ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-[5] border-gray-200 border-t bg-white pb-safe md:hidden dark:border-gray-800 dark:bg-black">
+    <nav className="fixed inset-x-0 bottom-0 z-[5] border-gray-200/65 border-t bg-white pb-safe md:hidden dark:border-gray-800/75 dark:bg-black">
       {showMobileDrawer && <MobileDrawerMenu />}
       <div className="flex items-center justify-between gap-1 px-1">
         {navigationItems.map(({ path, label, outline, solid }) => (
           <NavigationItem
+            badgeCount={
+              path === "/"
+                ? pathname !== "/"
+                  ? exploreCount
+                  : 0
+                : path === "/creators"
+                  ? pathname.startsWith("/creators")
+                    ? 0
+                    : creatorsCount
+                  : 0
+            }
             isActive={pathname === path}
             key={path}
             label={label}
@@ -112,7 +145,7 @@ const BottomNavigation = () => {
         {currentAccount && (
           <button
             aria-label="Your account"
-            className="flex flex-1 justify-center"
+            className="flex flex-1 flex-col items-center justify-center gap-1 py-2"
             onClick={handleAccountClick}
             type="button"
           >
@@ -121,6 +154,9 @@ const BottomNavigation = () => {
               className="size-6 rounded-full border border-gray-200 dark:border-gray-700"
               src={getAvatar(currentAccount)}
             />
+            <span className="px-1 font-medium text-[9px] text-gray-500 leading-none dark:text-gray-400">
+              Menu
+            </span>
           </button>
         )}
       </div>

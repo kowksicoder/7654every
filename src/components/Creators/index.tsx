@@ -1,810 +1,309 @@
-import {
-  ArrowTrendingDownIcon,
-  ArrowTrendingUpIcon,
-  FilmIcon,
-  MapIcon,
-  MusicalNoteIcon,
-  PaintBrushIcon,
-  SparklesIcon,
-  Squares2X2Icon,
-  TrophyIcon
-} from "@heroicons/react/24/solid";
-import type { ComponentType, SVGProps } from "react";
+import { SparklesIcon, Squares2X2Icon } from "@heroicons/react/24/solid";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import MetaTags from "@/components/Common/MetaTags";
-import { Card } from "@/components/Shared/UI";
+import { Card, EmptyState, ErrorMessage, Image } from "@/components/Shared/UI";
 import cn from "@/helpers/cn";
+import {
+  type FeaturedCreatorEntry,
+  fetchFeaturedCreatorEntries,
+  formatCompactMetric,
+  formatDelta,
+  formatUsdMetric,
+  getCreatorTicker,
+  getFeaturedCreatorAge,
+  isPositiveDelta,
+  parseMetricNumber
+} from "@/helpers/liveCreatorData";
 
-type Tone =
-  | "amber"
-  | "aqua"
-  | "blue"
-  | "emerald"
-  | "fuchsia"
-  | "indigo"
-  | "orange"
-  | "rose"
-  | "sky"
-  | "slate"
-  | "teal"
-  | "violet";
-
-type Trend = "down" | "up";
-
-interface PreviewAsset {
-  label: string;
-  tone: Tone;
-}
-
-interface CreatorEntry {
-  age: string;
-  avatarTone: Tone;
-  handle: string;
-  marketCap: string;
-  name: string;
-  previews: PreviewAsset[];
-  sparkline: number[];
-  trend: Trend;
-  volume: string;
-}
-
-const toneClasses: Record<Tone, string> = {
-  amber: "bg-gradient-to-br from-amber-200 via-yellow-400 to-orange-500",
-  aqua: "bg-gradient-to-br from-cyan-200 via-sky-400 to-blue-500",
-  blue: "bg-gradient-to-br from-blue-300 via-blue-500 to-indigo-600",
-  emerald: "bg-gradient-to-br from-emerald-200 via-emerald-400 to-green-600",
-  fuchsia: "bg-gradient-to-br from-pink-200 via-fuchsia-400 to-fuchsia-600",
-  indigo: "bg-gradient-to-br from-indigo-200 via-indigo-500 to-violet-700",
-  orange: "bg-gradient-to-br from-orange-200 via-orange-400 to-red-500",
-  rose: "bg-gradient-to-br from-rose-200 via-pink-400 to-rose-600",
-  sky: "bg-gradient-to-br from-sky-200 via-sky-400 to-cyan-600",
-  slate: "bg-gradient-to-br from-slate-300 via-slate-500 to-slate-700",
-  teal: "bg-gradient-to-br from-teal-200 via-teal-400 to-emerald-600",
-  violet: "bg-gradient-to-br from-violet-200 via-violet-400 to-fuchsia-600"
-};
-
-const mockCreators: CreatorEntry[] = [
-  {
-    age: "3mo",
-    avatarTone: "slate",
-    handle: "@thenickshirley",
-    marketCap: "$395k",
-    name: "thenickshirley",
-    previews: [
-      { label: "IRL", tone: "slate" },
-      { label: "CAR", tone: "orange" },
-      { label: "CAM", tone: "sky" }
-    ],
-    sparkline: [92, 78, 74, 66, 64, 69, 71, 83, 86, 90, 98, 88, 91],
-    trend: "up",
-    volume: "$179k"
-  },
-  {
-    age: "9mo",
-    avatarTone: "orange",
-    handle: "@sfascinated",
-    marketCap: "$39k",
-    name: "fascinated",
-    previews: [
-      { label: "ARC", tone: "slate" },
-      { label: "UI", tone: "rose" },
-      { label: "DOC", tone: "slate" }
-    ],
-    sparkline: [20, 21, 22, 23, 19, 18, 54, 71, 76, 78, 78, 72, 80],
-    trend: "up",
-    volume: "$2k"
-  },
-  {
-    age: "7mo",
-    avatarTone: "sky",
-    handle: "@thebeastfs",
-    marketCap: "$46k",
-    name: "thebeast",
-    previews: [
-      { label: "UNI", tone: "blue" },
-      { label: "TRB", tone: "rose" },
-      { label: "PCE", tone: "amber" }
-    ],
-    sparkline: [44, 43, 31, 28, 57, 54, 71, 78, 80, 96, 89, 88, 87],
-    trend: "up",
-    volume: "$9k"
-  },
-  {
-    age: "6mo",
-    avatarTone: "emerald",
-    handle: "@skeetermcbeaver",
-    marketCap: "$2k",
-    name: "SkeeterMcbeaver",
-    previews: [
-      { label: "MIX", tone: "amber" },
-      { label: "RAW", tone: "slate" },
-      { label: "CUT", tone: "orange" }
-    ],
-    sparkline: [92, 41, 13, 12, 12, 13, 14, 17, 20, 17, 14, 13, 12],
-    trend: "down",
-    volume: "$822"
-  },
-  {
-    age: "8mo",
-    avatarTone: "slate",
-    handle: "@balajis",
-    marketCap: "$618k",
-    name: "Balaji",
-    previews: [
-      { label: "MAP", tone: "slate" },
-      { label: "THS", tone: "sky" },
-      { label: "MEM", tone: "slate" }
-    ],
-    sparkline: [90, 75, 62, 60, 52, 55, 48, 58, 56, 60, 52, 54, 51],
-    trend: "down",
-    volume: "$4k"
-  },
-  {
-    age: "2mo",
-    avatarTone: "sky",
-    handle: "@marketscoin",
-    marketCap: "$71k",
-    name: "MC",
-    previews: [
-      { label: "AOR", tone: "amber" },
-      { label: "DEF", tone: "rose" },
-      { label: "GLD", tone: "orange" }
-    ],
-    sparkline: [31, 30, 26, 18, 68, 67, 66, 66, 66, 67, 84, 85, 86],
-    trend: "up",
-    volume: "$2k"
-  },
-  {
-    age: "5mo",
-    avatarTone: "slate",
-    handle: "@cc0company",
-    marketCap: "$17k",
-    name: "CC0 COMPANY",
-    previews: [
-      { label: "FLM", tone: "orange" },
-      { label: "ORB", tone: "indigo" },
-      { label: "BLK", tone: "slate" }
-    ],
-    sparkline: [82, 58, 44, 37, 34, 33, 11, 11, 29, 21, 22, 21, 21],
-    trend: "down",
-    volume: "$1k"
-  },
-  {
-    age: "3mo",
-    avatarTone: "amber",
-    handle: "@dexcheckai",
-    marketCap: "$387k",
-    name: "dexcheckai",
-    previews: [
-      { label: "DCT", tone: "amber" },
-      { label: "GMZ", tone: "slate" },
-      { label: "SGN", tone: "blue" }
-    ],
-    sparkline: [28, 71, 37, 43, 39, 94, 23, 25, 88, 30, 35, 33, 34],
-    trend: "up",
-    volume: "$38k"
-  },
-  {
-    age: "13d",
-    avatarTone: "teal",
-    handle: "@ugorreser",
-    marketCap: "$108k",
-    name: "UGORRESER",
-    previews: [
-      { label: "SUN", tone: "amber" },
-      { label: "SIG", tone: "slate" },
-      { label: "GLD", tone: "orange" }
-    ],
-    sparkline: [86, 86, 88, 91, 73, 79, 58, 62, 54, 56, 57, 54, 49],
-    trend: "down",
-    volume: "$83k"
-  },
-  {
-    age: "4mo",
-    avatarTone: "sky",
-    handle: "@jessepollak",
-    marketCap: "$1.9m",
-    name: "Jesse Pollak",
-    previews: [
-      { label: "PK", tone: "slate" },
-      { label: "NOTE", tone: "sky" },
-      { label: "MEM", tone: "slate" }
-    ],
-    sparkline: [91, 91, 91, 91, 69, 66, 58, 60, 54, 49, 42, 36, 30],
-    trend: "down",
-    volume: "$8k"
-  },
-  {
-    age: "4mo",
-    avatarTone: "slate",
-    handle: "@ugol",
-    marketCap: "$8k",
-    name: "Simon Schneider",
-    previews: [
-      { label: "MON", tone: "slate" },
-      { label: "LOOP", tone: "indigo" },
-      { label: "SND", tone: "sky" }
-    ],
-    sparkline: [84, 72, 59, 44, 21, 18, 63, 98, 100, 70, 66, 66, 69],
-    trend: "down",
-    volume: "$1k"
-  },
-  {
-    age: "2mo",
-    avatarTone: "aqua",
-    handle: "@topbasetrending",
-    marketCap: "$46k",
-    name: "Top Base Trending",
-    previews: [
-      { label: "BX", tone: "slate" },
-      { label: "OLD", tone: "orange" },
-      { label: "BSE", tone: "slate" }
-    ],
-    sparkline: [93, 91, 14, 14, 71, 40, 39, 43, 34, 34, 32, 31, 31],
-    trend: "down",
-    volume: "$577"
-  },
-  {
-    age: "8mo",
-    avatarTone: "blue",
-    handle: "@bouhiron",
-    marketCap: "$64k",
-    name: "BHRN FR",
-    previews: [
-      { label: "BHR", tone: "slate" },
-      { label: "FR", tone: "slate" },
-      { label: "XRP", tone: "blue" }
-    ],
-    sparkline: [88, 69, 43, 14, 14, 14, 31, 14, 14, 27, 22, 20, 19],
-    trend: "down",
-    volume: "$2k"
-  },
-  {
-    age: "5mo",
-    avatarTone: "indigo",
-    handle: "@8bitbase",
-    marketCap: "$37k",
-    name: "8BITBASE",
-    previews: [
-      { label: "GM", tone: "slate" },
-      { label: "8B", tone: "emerald" },
-      { label: "LMN", tone: "amber" }
-    ],
-    sparkline: [72, 67, 53, 52, 21, 35, 40, 17, 66, 79, 76, 82, 74],
-    trend: "up",
-    volume: "$4k"
-  },
-  {
-    age: "4mo",
-    avatarTone: "sky",
-    handle: "@princeofcoins",
-    marketCap: "$9k",
-    name: "Princeofcoins",
-    previews: [
-      { label: "MAP", tone: "slate" },
-      { label: "BUY", tone: "fuchsia" },
-      { label: "ASK", tone: "sky" }
-    ],
-    sparkline: [74, 31, 28, 36, 26, 26, 26, 41, 42, 33, 14, 15, 16],
-    trend: "down",
-    volume: "$560"
-  },
-  {
-    age: "5mo",
-    avatarTone: "fuchsia",
-    handle: "@bearmarketcoin",
-    marketCap: "$85k",
-    name: "BEAR MARKET COIN",
-    previews: [
-      { label: "BM", tone: "fuchsia" },
-      { label: "DOG", tone: "amber" },
-      { label: "BEAR", tone: "orange" }
-    ],
-    sparkline: [37, 37, 41, 42, 21, 82, 73, 96, 99, 100, 86, 86, 88],
-    trend: "up",
-    volume: "$1k"
-  },
-  {
-    age: "6mo",
-    avatarTone: "amber",
-    handle: "@kkn",
-    marketCap: "$1k",
-    name: "KidKoin",
-    previews: [
-      { label: "KK", tone: "slate" },
-      { label: "CO", tone: "amber" },
-      { label: "JP", tone: "slate" }
-    ],
-    sparkline: [84, 97, 84, 82, 79, 29, 18, 18, 21, 21, 21, 21, 16],
-    trend: "down",
-    volume: "$9k"
-  },
-  {
-    age: "9mo",
-    avatarTone: "teal",
-    handle: "@hojak",
-    marketCap: "$74k",
-    name: "hojak",
-    previews: [
-      { label: "XRP", tone: "indigo" },
-      { label: "MEM", tone: "slate" },
-      { label: "LTR", tone: "amber" }
-    ],
-    sparkline: [84, 82, 83, 75, 73, 14, 11, 11, 34, 36, 18, 19, 18],
-    trend: "down",
-    volume: "$4k"
-  },
-  {
-    age: "18d",
-    avatarTone: "rose",
-    handle: "@papoy",
-    marketCap: "$38k",
-    name: "papoy",
-    previews: [
-      { label: "UX", tone: "amber" },
-      { label: "ARC", tone: "orange" },
-      { label: "PM", tone: "blue" }
-    ],
-    sparkline: [64, 66, 58, 52, 11, 11, 79, 90, 84, 90, 88, 85, 69],
-    trend: "up",
-    volume: "$614"
-  },
-  {
-    age: "2mo",
-    avatarTone: "slate",
-    handle: "@aeongems",
-    marketCap: "$34k",
-    name: "aeongems",
-    previews: [
-      { label: "AE", tone: "emerald" },
-      { label: "ORB", tone: "amber" },
-      { label: "DOG", tone: "orange" }
-    ],
-    sparkline: [85, 68, 54, 39, 19, 11, 18, 13, 11, 11, 12, 11, 19],
-    trend: "down",
-    volume: "$2k"
-  }
-];
-
-const creatorMobileStats: Record<string, { e1xp: string; holders: string }> = {
-  "@8bitbase": { e1xp: "10.4M", holders: "1.7K" },
-  "@aeongems": { e1xp: "6.4M", holders: "236" },
-  "@balajis": { e1xp: "84.2M", holders: "18.9K" },
-  "@bearmarketcoin": { e1xp: "7.7M", holders: "397" },
-  "@bouhiron": { e1xp: "6.6M", holders: "249" },
-  "@cc0company": { e1xp: "12.9M", holders: "2.4K" },
-  "@dexcheckai": { e1xp: "34.2M", holders: "1.5K" },
-  "@hojak": { e1xp: "11M", holders: "223" },
-  "@jessepollak": { e1xp: "196.7M", holders: "62.3K" },
-  "@kkn": { e1xp: "8.6M", holders: "2K" },
-  "@marketscoin": { e1xp: "6.1M", holders: "378" },
-  "@papoy": { e1xp: "8.9M", holders: "514" },
-  "@princeofcoins": { e1xp: "13.3M", holders: "1.9K" },
-  "@sfascinated": { e1xp: "18.4M", holders: "33.5K" },
-  "@skeetermcbeaver": { e1xp: "9.8M", holders: "2.8K" },
-  "@thebeastfs": { e1xp: "42.2M", holders: "24.8K" },
-  "@thenickshirley": { e1xp: "41.3M", holders: "17.9K" },
-  "@topbasetrending": { e1xp: "6.8M", holders: "1.9K" },
-  "@ugol": { e1xp: "5.7M", holders: "809" },
-  "@ugorreser": { e1xp: "42M", holders: "809" }
-};
-
-const mobileFilters: Array<{
-  Icon: ComponentType<SVGProps<SVGSVGElement>>;
-  active?: boolean;
-  label: string;
-}> = [
-  { Icon: Squares2X2Icon, active: true, label: "All" },
-  { Icon: MusicalNoteIcon, label: "Music" },
-  { Icon: PaintBrushIcon, label: "Art" },
-  { Icon: FilmIcon, label: "Movies" },
-  { Icon: SparklesIcon, label: "Pop-Culture" },
-  { Icon: TrophyIcon, label: "Sports" },
-  { Icon: MapIcon, label: "Travel" }
-];
-
-const parseCompactValue = (value: string) => {
-  const normalized = value.replace(/[$,]/g, "").trim().toLowerCase();
-  const multiplier = normalized.endsWith("b")
-    ? 1_000_000_000
-    : normalized.endsWith("m")
-      ? 1_000_000
-      : normalized.endsWith("k")
-        ? 1_000
-        : 1;
-  const base = Number.parseFloat(normalized.replace(/[bmk]$/i, ""));
-
-  return Number.isNaN(base) ? 0 : base * multiplier;
-};
-
-const formatCompactValue = (
-  value: number,
-  { currency = false }: { currency?: boolean } = {}
-) => {
-  if (value === 0) {
-    return currency ? "$0" : "0";
-  }
-
-  const absoluteValue = Math.abs(value);
-  const [scaledValue, suffix] =
-    absoluteValue >= 1_000_000_000
-      ? [value / 1_000_000_000, "B"]
-      : absoluteValue >= 1_000_000
-        ? [value / 1_000_000, "M"]
-        : absoluteValue >= 1_000
-          ? [value / 1_000, "K"]
-          : [value, ""];
-
-  const decimals = Math.abs(scaledValue) >= 100 ? 0 : Math.abs(scaledValue) >= 10 ? 1 : 2;
-  const formattedValue = scaledValue
-    .toFixed(decimals)
-    .replace(/\.0+$|(\.\d*[1-9])0+$/, "$1");
-
-  return `${currency ? "$" : ""}${formattedValue}${suffix}`;
-};
-
-const totalMarketCap = mockCreators.reduce(
-  (sum, creator) => sum + parseCompactValue(creator.marketCap),
-  0
-);
-
-const totalVolume = mockCreators.reduce(
-  (sum, creator) => sum + parseCompactValue(creator.volume),
-  0
-);
-
-const averageHolders =
-  Object.values(creatorMobileStats).reduce(
-    (sum, creator) => sum + parseCompactValue(creator.holders),
-    0
-  ) / Object.values(creatorMobileStats).length;
-
-const mobileOverviewCards = [
-  {
-    label: "Creators",
-    value: mockCreators.length.toString(),
-    valueClassName: "text-[#26dd86]"
-  },
-  {
-    label: "Market Cap",
-    value: formatCompactValue(totalMarketCap, { currency: true }),
-    valueClassName: "text-[#26dd86]"
-  },
-  {
-    label: "Earnings",
-    value: formatCompactValue(totalVolume, { currency: true }),
-    valueClassName: "text-[#26dd86]"
-  },
-  {
-    label: "Avg. Holders",
-    value: formatCompactValue(averageHolders),
-    valueClassName: "text-white"
-  }
-];
-
-const getInitials = (name: string) =>
-  name
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
-const formatId = (value: string) => value.replace(/[^a-z0-9]/gi, "").toLowerCase();
-
-const buildSparkline = (values: number[]) => {
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = max - min || 1;
-
-  const points = values.map((value, index) => {
-    const x = (index / Math.max(values.length - 1, 1)) * 100;
-    const y = 34 - ((value - min) / range) * 26;
-
-    return [Number(x.toFixed(2)), Number(y.toFixed(2))] as const;
-  });
-
-  const linePath = points
-    .map(([x, y], index) => `${index === 0 ? "M" : "L"} ${x} ${y}`)
-    .join(" ");
-
-  return {
-    areaPath: `${linePath} L 100 40 L 0 40 Z`,
-    lastPoint: points[points.length - 1],
-    linePath
-  };
-};
-
-const Sparkline = ({
-  handle,
-  trend,
-  values
-}: {
-  handle: string;
-  trend: Trend;
-  values: number[];
-}) => {
-  const chartId = formatId(handle);
-  const { areaPath, lastPoint, linePath } = buildSparkline(values);
-  const strokeColor = trend === "up" ? "#22c55e" : "#d946ef";
-  const softColor = trend === "up" ? "#86efac" : "#f5d0fe";
-
-  return (
-    <svg
-      aria-hidden="true"
-      className="h-14 w-full min-w-[8rem]"
-      preserveAspectRatio="none"
-      viewBox="0 0 100 40"
-    >
-      <defs>
-        <linearGradient id={`${chartId}-fill`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={softColor} stopOpacity="0.45" />
-          <stop offset="100%" stopColor={softColor} stopOpacity="0.06" />
-        </linearGradient>
-      </defs>
-      <path d={areaPath} fill={`url(#${chartId}-fill)`} />
-      <path
-        d={linePath}
-        fill="none"
-        stroke={strokeColor}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2.4"
-      />
-      <circle
-        cx={lastPoint[0]}
-        cy={lastPoint[1]}
-        fill={strokeColor}
-        r="2.8"
-        stroke="white"
-        strokeWidth="1.5"
-      />
-    </svg>
-  );
-};
-
-const PreviewStrip = ({ previews }: { previews: PreviewAsset[] }) => (
-  <div className="flex items-center -space-x-2">
-    {previews.map((preview) => (
-      <div
-        className={cn(
-          "flex size-11 items-center justify-center overflow-hidden rounded-xl border border-white text-[9px] font-semibold tracking-[0.2em] text-white shadow-sm dark:border-gray-950",
-          toneClasses[preview.tone]
-        )}
-        key={`${preview.label}-${preview.tone}`}
-      >
-        {preview.label.slice(0, 4)}
-      </div>
-    ))}
-  </div>
-);
-
-const TrendValue = ({
-  trend,
-  value
-}: {
-  trend: Trend;
-  value: string;
-}) => {
-  const isUp = trend === "up";
-  const TrendIcon = isUp ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
-
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-1.5 text-base font-semibold md:text-[1.05rem]",
-        isUp ? "text-emerald-500" : "text-fuchsia-500"
-      )}
-    >
-      <TrendIcon className="size-4" />
-      <span>{value}</span>
-    </div>
-  );
-};
+const creatorsQueryKey = "featured-creators-page";
 
 const MobileOverviewCard = ({
-  centered = false,
-  compact = false,
   label,
   value,
   valueClassName
 }: {
-  centered?: boolean;
-  compact?: boolean;
   label: string;
   value: string;
   valueClassName: string;
 }) => (
-  <div
-    className={cn(
-      compact
-        ? "min-w-[5.4rem] shrink-0 rounded-[1.1rem] bg-[#171717] px-2.5 py-2"
-        : "min-w-[7.25rem] shrink-0 rounded-[1.35rem] bg-[#171717] px-3 py-2.5",
-      centered ? "text-center" : undefined
-    )}
-  >
+  <div className="min-w-[5.4rem] shrink-0 rounded-[1.1rem] bg-gray-100 px-2.5 py-2 dark:bg-[#171717]">
     <p
       className={cn(
-        compact ? "text-[0.95rem]" : "text-lg",
-        "font-semibold tracking-tight",
+        "font-semibold text-[0.95rem] tracking-tight",
         valueClassName
       )}
     >
       {value}
     </p>
-    <p className={cn(compact ? "mt-0.5 text-[9px]" : "mt-0.5 text-[10px]", "font-medium text-[#a4a4a8]")}>
+    <p className="mt-0.5 font-medium text-[9px] text-gray-500 dark:text-[#a4a4a8]">
       {label}
     </p>
   </div>
 );
 
-const MobileFilterChip = ({
-  Icon,
-  active,
-  compact = false,
-  label
-}: {
-  Icon: ComponentType<SVGProps<SVGSVGElement>>;
-  active?: boolean;
-  compact?: boolean;
-  label: string;
-}) => (
-  <button
-    className={cn(
-      compact
-        ? "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-colors"
-        : "inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-[13px] font-semibold transition-colors",
-      active
-        ? "bg-[#12c46b] text-white"
-        : "border border-[#262628] bg-[#141415] text-[#9f9fa5]"
-    )}
-    type="button"
-  >
-    <Icon className={compact ? "size-3.5" : "size-4"} />
-    <span>{label}</span>
-  </button>
-);
-
-const MobileMetric = ({
+const MetricCell = ({
   accent,
   label,
+  negative,
   value
 }: {
   accent?: boolean;
   label: string;
+  negative?: boolean;
   value: string;
 }) => (
-  <div className="min-w-0">
+  <div className="min-w-0 rounded-2xl bg-gray-100 px-2.5 py-2 dark:bg-[#101011]">
     <p
       className={cn(
-        "truncate text-[13px] font-semibold tracking-tight",
-        accent ? "text-[#ffbf34]" : "text-white"
+        "truncate font-semibold text-[13px] tracking-tight",
+        accent
+          ? negative
+            ? "text-rose-500"
+            : "text-[#12c46b]"
+          : "text-gray-900 dark:text-white"
       )}
     >
       {value}
     </p>
-    <p className="mt-1 text-[10px] font-medium text-[#8c8c92]">{label}</p>
+    <p className="mt-1 font-medium text-[10px] text-gray-500 dark:text-[#8c8c92]">
+      {label}
+    </p>
   </div>
 );
 
-const MobileCreatorCard = ({ creator }: { creator: CreatorEntry }) => {
-  const mobileStats = creatorMobileStats[creator.handle] ?? {
-    e1xp: formatCompactValue(parseCompactValue(creator.marketCap) * 3.1),
-    holders: formatCompactValue(parseCompactValue(creator.marketCap) / 40)
-  };
+const MobileCreatorCard = ({ creator }: { creator: FeaturedCreatorEntry }) => {
+  const positive = isPositiveDelta(creator.marketCapDelta24h);
+  const ticker = getCreatorTicker(creator.symbol);
 
   return (
-    <div className="rounded-[1.65rem] bg-[#171717] px-3.5 py-3 shadow-[0_22px_32px_-28px_rgba(0,0,0,0.98)] ring-1 ring-white/[0.03]">
-      <div className="grid grid-cols-[4.25rem_repeat(4,minmax(0,1fr))] items-center gap-3">
-        <div className="min-w-0">
-          <div
-            className={cn(
-              "mx-auto flex size-12 items-center justify-center rounded-full p-[2px]",
-              toneClasses[creator.avatarTone]
-            )}
-          >
-            <div className="flex size-full items-center justify-center rounded-full bg-[#101011] text-xs font-semibold text-white">
-              {getInitials(creator.name)}
-            </div>
+    <div className="rounded-[1.65rem] bg-white px-3.5 py-3 shadow-[0_18px_28px_-24px_rgba(15,23,42,0.12)] ring-1 ring-gray-200/80 dark:bg-[#171717] dark:shadow-[0_22px_32px_-28px_rgba(0,0,0,0.98)] dark:ring-white/[0.03]">
+      <div className="flex items-center gap-3">
+        <Image
+          alt={creator.name}
+          className="size-11 rounded-full object-cover ring-1 ring-gray-200 dark:ring-white/10"
+          height={44}
+          src={creator.avatar}
+          width={44}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="truncate font-semibold text-[15px] text-gray-900 dark:text-white">
+              {creator.name}
+            </p>
+            {ticker ? (
+              <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 font-semibold text-[10px] text-gray-600 dark:bg-[#101011] dark:text-[#c9c9cf]">
+                {ticker}
+              </span>
+            ) : null}
           </div>
-          <p className="mt-2 truncate text-[10px] font-medium text-[#9f9fa5]">
+          <p className="truncate text-[11px] text-gray-500 dark:text-[#9f9fa5]">
             {creator.handle}
           </p>
         </div>
+      </div>
 
-        <MobileMetric label="Holders" value={mobileStats.holders} />
-        <MobileMetric label="M.Cap" value={creator.marketCap} />
-        <MobileMetric label="Vol" value={creator.volume} />
-        <MobileMetric accent label="E1XP" value={mobileStats.e1xp} />
+      <div className="mt-3 grid grid-cols-4 gap-2">
+        <MetricCell
+          label="Holders"
+          value={formatCompactMetric(creator.uniqueHolders)}
+        />
+        <MetricCell label="MC" value={formatUsdMetric(creator.marketCap)} />
+        <MetricCell label="Vol" value={formatUsdMetric(creator.volume24h)} />
+        <MetricCell
+          accent
+          label="24h"
+          negative={!positive}
+          value={formatDelta(creator.marketCapDelta24h)}
+        />
       </div>
     </div>
   );
 };
 
-const CreatorRow = ({ creator }: { creator: CreatorEntry }) => (
-  <Card
-    className="mx-5 px-4 py-4 shadow-none transition-colors hover:border-gray-300 hover:bg-gray-50/60 dark:hover:border-gray-600 dark:hover:bg-gray-950/60 md:mx-0 md:px-5"
-    forceRounded
-  >
-    <div className="grid gap-4 md:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1.2fr)] md:items-center">
-      <div className="flex items-center gap-3">
-        <div
-          className={cn(
-            "flex size-14 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white shadow-sm ring-1 ring-black/5",
-            toneClasses[creator.avatarTone]
-          )}
-        >
-          {getInitials(creator.name)}
+const CreatorRow = ({ creator }: { creator: FeaturedCreatorEntry }) => {
+  const positive = isPositiveDelta(creator.marketCapDelta24h);
+  const ticker = getCreatorTicker(creator.symbol);
+
+  return (
+    <Card
+      className="mx-5 px-4 py-4 shadow-none transition-colors hover:border-gray-300 hover:bg-gray-50/60 md:mx-0 md:px-5 dark:hover:border-gray-600 dark:hover:bg-gray-950/60"
+      forceRounded
+    >
+      <div className="grid gap-4 md:grid-cols-[minmax(0,2.5fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.9fr)_minmax(0,0.65fr)_minmax(0,0.8fr)] md:items-center">
+        <div className="flex items-center gap-3">
+          <Image
+            alt={creator.name}
+            className="size-12 shrink-0 rounded-full object-cover ring-1 ring-gray-200 dark:ring-white/10"
+            height={48}
+            src={creator.avatar}
+            width={48}
+          />
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2">
+              <p className="truncate font-semibold text-gray-950 text-lg dark:text-gray-50">
+                {creator.name}
+              </p>
+              {ticker ? (
+                <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 font-semibold text-[10px] text-gray-600 dark:bg-gray-900 dark:text-gray-300">
+                  {ticker}
+                </span>
+              ) : null}
+            </div>
+            <p className="truncate text-base text-gray-500 dark:text-gray-400">
+              {creator.handle}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="truncate text-lg font-semibold text-gray-950 dark:text-gray-50">
-            {creator.name}
+
+        <div>
+          <p className="font-semibold text-[11px] text-gray-500 uppercase tracking-[0.18em] md:hidden">
+            Market cap
           </p>
-          <p className="truncate text-base text-gray-500 dark:text-gray-400">
-            {creator.handle}
+          <p className="font-semibold text-base text-gray-950 dark:text-gray-50">
+            {formatUsdMetric(creator.marketCap)}
+          </p>
+        </div>
+
+        <div>
+          <p className="font-semibold text-[11px] text-gray-500 uppercase tracking-[0.18em] md:hidden">
+            24h vol
+          </p>
+          <p className="font-semibold text-base text-gray-950 dark:text-gray-50">
+            {formatUsdMetric(creator.volume24h)}
+          </p>
+        </div>
+
+        <div>
+          <p className="font-semibold text-[11px] text-gray-500 uppercase tracking-[0.18em] md:hidden">
+            Holders
+          </p>
+          <p className="font-semibold text-base text-gray-950 dark:text-gray-50">
+            {formatCompactMetric(creator.uniqueHolders)}
+          </p>
+        </div>
+
+        <div>
+          <p className="font-semibold text-[11px] text-gray-500 uppercase tracking-[0.18em] md:hidden">
+            Age
+          </p>
+          <p className="text-base text-gray-500 dark:text-gray-400">
+            {getFeaturedCreatorAge(creator.createdAt)}
+          </p>
+        </div>
+
+        <div>
+          <p className="font-semibold text-[11px] text-gray-500 uppercase tracking-[0.18em] md:hidden">
+            24h
+          </p>
+          <p
+            className={cn(
+              "font-semibold text-base",
+              positive ? "text-emerald-500" : "text-rose-500"
+            )}
+          >
+            {formatDelta(creator.marketCapDelta24h)}
           </p>
         </div>
       </div>
+    </Card>
+  );
+};
 
-      <div className="space-y-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 md:hidden">
-          Market cap
-        </p>
-        <TrendValue trend={creator.trend} value={creator.marketCap} />
-      </div>
-
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 md:hidden">
-          24h vol
-        </p>
-        <p className="text-base font-semibold text-gray-950 dark:text-gray-50">
-          {creator.volume}
-        </p>
-      </div>
-
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 md:hidden">
-          Age
-        </p>
-        <p className="text-base text-gray-500 dark:text-gray-400">
-          {creator.age}
-        </p>
-      </div>
-
-      <div className="space-y-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 md:hidden">
-          Recent drops
-        </p>
-        <PreviewStrip previews={creator.previews} />
-      </div>
-
-      <div className="space-y-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 md:hidden">
-          Past 24 hours
-        </p>
-        <Sparkline
-          handle={creator.handle}
-          trend={creator.trend}
-          values={creator.sparkline}
-        />
+const LoadingCard = () => (
+  <div className="rounded-[1.65rem] bg-white px-3.5 py-3 ring-1 ring-gray-200/80 dark:bg-[#171717] dark:ring-white/[0.03]">
+    <div className="flex items-center gap-3">
+      <div className="size-11 animate-pulse rounded-full bg-gray-200 dark:bg-white/10" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="h-4 w-32 animate-pulse rounded-full bg-gray-200 dark:bg-white/10" />
+        <div className="h-3 w-20 animate-pulse rounded-full bg-gray-200 dark:bg-white/10" />
       </div>
     </div>
-  </Card>
+    <div className="mt-3 grid grid-cols-4 gap-2">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          className="h-14 animate-pulse rounded-2xl bg-gray-100 dark:bg-[#101011]"
+          key={index.toString()}
+        />
+      ))}
+    </div>
+  </div>
 );
 
 const Creators = () => {
+  const {
+    data = [],
+    error,
+    isLoading
+  } = useQuery({
+    queryFn: () => fetchFeaturedCreatorEntries(12),
+    queryKey: [creatorsQueryKey],
+    staleTime: 60_000
+  });
+
+  const overviewCards = useMemo(() => {
+    const totalMarketCap = data.reduce(
+      (sum, creator) => sum + parseMetricNumber(creator.marketCap),
+      0
+    );
+    const totalVolume = data.reduce(
+      (sum, creator) => sum + parseMetricNumber(creator.volume24h),
+      0
+    );
+    const averageHolders =
+      data.reduce((sum, creator) => sum + creator.uniqueHolders, 0) /
+      Math.max(data.length, 1);
+
+    return [
+      {
+        label: "Featured",
+        value: data.length.toString(),
+        valueClassName: "text-[#26dd86]"
+      },
+      {
+        label: "Market Cap",
+        value: formatUsdMetric(totalMarketCap),
+        valueClassName: "text-[#26dd86]"
+      },
+      {
+        label: "24h Vol",
+        value: formatUsdMetric(totalVolume),
+        valueClassName: "text-[#26dd86]"
+      },
+      {
+        label: "Avg. Holders",
+        value: formatCompactMetric(averageHolders),
+        valueClassName: "text-gray-900 dark:text-white"
+      }
+    ];
+  }, [data]);
+
   return (
     <>
       <MetaTags
-        description="A creator leaderboard mockup for Every1. Static data for now, with Zora integration coming later."
+        description="Track Zora's weekly featured creators with live creator coin market caps, volume, holders, and 24 hour movement."
         title="Creators"
       />
       <main className="mt-0 mb-16 min-w-0 flex-1 md:mt-5 md:mb-5">
-        <section className="bg-[#0d0d0e] px-3 pb-6 pt-2.5 text-white md:hidden">
+        <section className="bg-white px-3 pt-2.5 pb-6 text-gray-900 md:hidden dark:bg-[#0d0d0e] dark:text-white">
           <div className="space-y-3.5">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex size-7 items-center justify-center rounded-full bg-gray-100 text-[#12c46b] dark:bg-[#171717]">
+                <SparklesIcon className="size-4" />
+              </span>
+              <div>
+                <p className="font-semibold text-[13px] text-gray-900 dark:text-white">
+                  Featured creators
+                </p>
+                <p className="text-[11px] text-gray-500 dark:text-[#9f9fa5]">
+                  This week on Zora
+                </p>
+              </div>
+            </div>
+
             <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5">
-              {mobileOverviewCards.map((card) => (
+              {overviewCards.map((card) => (
                 <MobileOverviewCard
-                  compact
                   key={card.label}
                   label={card.label}
                   value={card.value}
@@ -813,69 +312,115 @@ const Creators = () => {
               ))}
             </div>
 
-            <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-0.5">
-              {mobileFilters.map((filter) => (
-                <MobileFilterChip
-                  Icon={filter.Icon}
-                  active={filter.active}
-                  compact
-                  key={filter.label}
-                  label={filter.label}
-                />
-              ))}
-            </div>
+            {error ? (
+              <ErrorMessage error={error} title="Failed to load creators" />
+            ) : null}
+
+            {!error && !isLoading && !data.length ? (
+              <EmptyState
+                icon={<Squares2X2Icon className="size-8" />}
+                message="No featured creators found this week."
+              />
+            ) : null}
 
             <div className="space-y-2.5">
-              {mockCreators.map((creator) => (
-                <MobileCreatorCard creator={creator} key={creator.handle} />
-              ))}
+              {isLoading
+                ? Array.from({ length: 6 }).map((_, index) => (
+                    <LoadingCard key={index.toString()} />
+                  ))
+                : data.map((creator) => (
+                    <MobileCreatorCard
+                      creator={creator}
+                      key={creator.address}
+                    />
+                  ))}
             </div>
           </div>
         </section>
 
         <section className="hidden space-y-4 md:block">
           <div className="space-y-3">
+            <div className="flex items-center justify-center gap-3">
+              <span className="inline-flex size-9 items-center justify-center rounded-full bg-gray-100 text-[#12c46b] dark:bg-[#171717]">
+                <SparklesIcon className="size-5" />
+              </span>
+              <div className="text-center">
+                <p className="font-semibold text-gray-900 text-sm dark:text-white">
+                  Featured creators
+                </p>
+                <p className="text-[11px] text-gray-500 dark:text-[#a4a4a8]">
+                  Weekly list from Zora
+                </p>
+              </div>
+            </div>
+
             <div className="flex justify-center">
               <div className="no-scrollbar flex flex-wrap justify-center gap-3 pb-1">
-                {mobileOverviewCards.map((card) => (
-                  <MobileOverviewCard
-                    centered
+                {overviewCards.map((card) => (
+                  <div
+                    className="min-w-[7.2rem] shrink-0 rounded-[1.3rem] bg-gray-100 px-3 py-2.5 text-center dark:bg-[#171717]"
                     key={card.label}
-                    label={card.label}
-                    value={card.value}
-                    valueClassName={card.valueClassName}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-center">
-              <div className="no-scrollbar flex flex-wrap justify-center gap-2 pb-1">
-                {mobileFilters.map((filter) => (
-                  <MobileFilterChip
-                    Icon={filter.Icon}
-                    active={filter.active}
-                    key={filter.label}
-                    label={filter.label}
-                  />
+                  >
+                    <p
+                      className={cn(
+                        "font-semibold text-lg tracking-tight",
+                        card.valueClassName
+                      )}
+                    >
+                      {card.value}
+                    </p>
+                    <p className="mt-0.5 font-medium text-[10px] text-gray-500 dark:text-[#a4a4a8]">
+                      {card.label}
+                    </p>
+                  </div>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="hidden px-4 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 md:grid md:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1.2fr)] md:items-center md:px-5">
-            <span>Coin</span>
-            <span>Market cap</span>
-            <span>24h vol</span>
-            <span>Age</span>
-            <span>Recent drops</span>
-            <span>Past 24 hours</span>
-          </div>
+          {error ? (
+            <ErrorMessage error={error} title="Failed to load creators" />
+          ) : null}
+
+          {!error && !isLoading ? (
+            <div className="hidden px-4 font-semibold text-gray-500 text-xs uppercase tracking-[0.18em] md:grid md:grid-cols-[minmax(0,2.5fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.9fr)_minmax(0,0.65fr)_minmax(0,0.8fr)] md:items-center md:px-5">
+              <span>Creator</span>
+              <span>Market cap</span>
+              <span>24h vol</span>
+              <span>Holders</span>
+              <span>Age</span>
+              <span>24h</span>
+            </div>
+          ) : null}
+
+          {!error && !isLoading && !data.length ? (
+            <EmptyState
+              icon={<Squares2X2Icon className="size-8" />}
+              message="No featured creators found this week."
+            />
+          ) : null}
 
           <section className="space-y-3 pb-6">
-            {mockCreators.map((creator) => (
-              <CreatorRow creator={creator} key={creator.handle} />
-            ))}
+            {isLoading
+              ? Array.from({ length: 8 }).map((_, index) => (
+                  <Card
+                    className="px-5 py-5"
+                    forceRounded
+                    key={index.toString()}
+                  >
+                    <div className="grid animate-pulse gap-4 md:grid-cols-[minmax(0,2.5fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.9fr)_minmax(0,0.65fr)_minmax(0,0.8fr)]">
+                      <div className="h-10 rounded-full bg-gray-200 dark:bg-white/10" />
+                      <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />
+                      <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />
+                      <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />
+                      <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />
+                      <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />
+                    </div>
+                  </Card>
+                ))
+              : data.map((creator) => (
+                  <CreatorRow creator={creator} key={creator.address} />
+                ))}
           </section>
         </section>
       </main>

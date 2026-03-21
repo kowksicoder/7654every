@@ -15,6 +15,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useMeQuery } from "@/indexer/generated";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
 import { hydrateAuthTokens, signOut } from "@/store/persisted/useAuthStore";
+import Every1RuntimeBridge from "./Every1RuntimeBridge";
 import ReloadTabsWatcher from "./ReloadTabsWatcher";
 
 const Layout = () => {
@@ -65,6 +66,7 @@ const Layout = () => {
       <GlobalModals />
       <GlobalAlerts />
       <ReloadTabsWatcher />
+      <Every1RuntimeBridge />
       <MobileHeader />
       <div className="mx-auto flex w-full max-w-6xl items-start gap-x-8 px-0 md:px-5">
         <Navbar />

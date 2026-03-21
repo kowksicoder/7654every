@@ -2,7 +2,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { type ElementType, type MouseEvent, memo, type ReactNode } from "react";
 
 const cardVariants = cva(
-  "border-gray-200 dark:border-gray-700 bg-white dark:bg-black",
+  "border-gray-200/65 bg-white dark:border-gray-800/75 dark:bg-black",
   {
     defaultVariants: { forceRounded: false },
     variants: {

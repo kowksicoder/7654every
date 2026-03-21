@@ -1,6 +1,8 @@
 import { memo } from "react";
 import Skeleton from "@/components/Shared/Skeleton";
 import { Card } from "@/components/Shared/UI";
+import { HomeFeedView } from "@/data/enums";
+import cn from "@/helpers/cn";
 
 const ZoraPostShimmer = () => {
   return (
@@ -66,12 +68,73 @@ const ZoraPostShimmer = () => {
   );
 };
 
-const ZoraFeedShimmer = () => {
+const ZoraGridPostShimmer = () => {
   return (
-    <section className="min-w-0 overflow-x-hidden space-y-3 pb-5">
-      {Array.from({ length: 3 }).map((_, index) => (
-        <ZoraPostShimmer key={index} />
-      ))}
+    <Card
+      className="h-full w-full min-w-0 overflow-hidden px-0 py-0"
+      forceRounded
+    >
+      <div className="px-2.5 pt-2.5 pb-2 md:px-3 md:pt-3 md:pb-2.5">
+        <div className="flex items-start gap-2">
+          <Skeleton className="size-7 rounded-full md:size-8" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Skeleton className="h-3 w-16 rounded-full" />
+            <Skeleton className="h-2.5 w-10 rounded-full" />
+          </div>
+        </div>
+      </div>
+
+      <div className="px-2.5 pb-2 md:px-3 md:pb-2.5">
+        <Skeleton className="aspect-[6/5] w-full rounded-[0.9rem] md:aspect-square md:rounded-[1rem]" />
+      </div>
+
+      <div className="px-2.5 pb-2 md:px-3 md:pb-2.5">
+        <div className="grid grid-cols-2 gap-1">
+          <Skeleton className="h-5 rounded-full" />
+          <Skeleton className="h-5 rounded-full" />
+        </div>
+      </div>
+
+      <div className="border-gray-200 border-t px-1.5 py-1 md:px-2 md:py-1.5 dark:border-gray-800">
+        <div className="grid grid-cols-3 gap-0.5">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              className="inline-flex items-center justify-center gap-1.5 px-1.5 py-1.5"
+              key={index}
+            >
+              <Skeleton className="size-3.5 rounded-full" />
+              <Skeleton className="h-2.5 w-5 rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+const ZoraFeedShimmer = ({
+  viewMode = HomeFeedView.LIST
+}: {
+  viewMode?: HomeFeedView;
+}) => {
+  const isGridView = viewMode === HomeFeedView.GRID;
+
+  return (
+    <section
+      className={cn(
+        "min-w-0 overflow-x-hidden pb-5",
+        isGridView
+          ? "grid grid-cols-2 gap-3 px-4 md:grid-cols-3 md:px-0"
+          : "space-y-3"
+      )}
+    >
+      {Array.from({ length: isGridView ? 6 : 3 }).map((_, index) =>
+        isGridView ? (
+          <ZoraGridPostShimmer key={index} />
+        ) : (
+          <ZoraPostShimmer key={index} />
+        )
+      )}
     </section>
   );
 };

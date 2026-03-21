@@ -1,25 +1,21 @@
 import { useApolloClient } from "@apollo/client";
 import {
   BellIcon as BellOutline,
-  BookmarkIcon as BookmarkOutline,
-  MapIcon as CompassOutline,
   PlusCircleIcon as CreateOutline,
   StarIcon as CreatorsOutline,
   TrophyIcon as LeaderboardOutline,
   FlagIcon as MissionsOutline,
-  BoltIcon as StreaksOutline,
+  GiftIcon as ReferralsOutline,
   ArrowsRightLeftIcon as SwapOutline,
   UserGroupIcon as UserGroupOutline
 } from "@heroicons/react/24/outline";
 import {
   BellIcon as BellSolid,
-  BookmarkIcon as BookmarkSolid,
-  MapIcon as CompassSolid,
   PlusCircleIcon as CreateSolid,
   StarIcon as CreatorsSolid,
   TrophyIcon as LeaderboardSolid,
   FlagIcon as MissionsSolid,
-  BoltIcon as StreaksSolid,
+  GiftIcon as ReferralsSolid,
   ArrowsRightLeftIcon as SwapSolid,
   UserGroupIcon as UserGroupSolid
 } from "@heroicons/react/24/solid";
@@ -34,13 +30,17 @@ import {
 import { Link, useLocation } from "react-router";
 import evLogo from "@/assets/fonts/evlogo.jpg";
 import { ZORA_HOME_FEED_QUERY_KEY } from "@/components/Home/zoraHomeFeedConfig";
+import {
+  CompassExploreOutlineIcon,
+  CompassExploreSolidIcon
+} from "@/components/Shared/Icons/CompassExploreIcon";
 import { Image, Spinner, Tooltip } from "@/components/Shared/UI";
+import useEvery1MobileNavBadgeCounts from "@/hooks/useEvery1MobileNavBadgeCounts";
 import useHasNewNotifications from "@/hooks/useHasNewNotifications";
 import {
   GroupsDocument,
   NotificationIndicatorDocument,
-  NotificationsDocument,
-  PostBookmarksDocument
+  NotificationsDocument
 } from "@/indexer/generated";
 import { useAuthModalStore } from "@/store/non-persisted/modal/useAuthModalStore";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
@@ -48,15 +48,9 @@ import SignedAccount from "./SignedAccount";
 
 const navigationItems = {
   "/": {
-    outline: <CompassOutline className="size-6" />,
-    solid: <CompassSolid className="size-6" />,
+    outline: <CompassExploreOutlineIcon className="size-6" />,
+    solid: <CompassExploreSolidIcon className="size-6" />,
     title: "Explore"
-  },
-  "/bookmarks": {
-    outline: <BookmarkOutline className="size-6" />,
-    refreshDocs: [PostBookmarksDocument],
-    solid: <BookmarkSolid className="size-6" />,
-    title: "Bookmarks"
   },
   "/create": {
     outline: <CreateOutline className="size-6" />,
@@ -90,10 +84,10 @@ const navigationItems = {
     solid: <BellSolid className="size-6" />,
     title: "Notifications"
   },
-  "/streaks": {
-    outline: <StreaksOutline className="size-6" />,
-    solid: <StreaksSolid className="size-6" />,
-    title: "Streaks"
+  "/referrals": {
+    outline: <ReferralsOutline className="size-6" />,
+    solid: <ReferralsSolid className="size-6" />,
+    title: "Referrals"
   },
   "/swap": {
     outline: <SwapOutline className="size-6" />,
@@ -118,40 +112,66 @@ const NavItem = memo(({ icon, onClick, url }: NavItemProps) => (
 
 const NavItems = memo(({ isLoggedIn }: { isLoggedIn: boolean }) => {
   const { pathname } = useLocation();
+  const { creatorsCount, exploreCount } = useEvery1MobileNavBadgeCounts();
   const hasNewNotifications = useHasNewNotifications();
   const client = useApolloClient();
   const queryClient = useQueryClient();
   const [refreshingRoute, setRefreshingRoute] = useState<string | null>(null);
+  const isRouteActive = (route: string) => {
+    if (route === "/referrals") {
+      return (
+        pathname === "/referrals" ||
+        pathname.startsWith("/referrals/") ||
+        pathname === "/streaks" ||
+        pathname.startsWith("/streaks/")
+      );
+    }
+
+    return pathname === route;
+  };
   const routes = [
     "/",
     "/create",
     "/creators",
     "/leaderboard",
     "/swap",
+    "/referrals",
     "/missions",
-    "/streaks",
-    ...(isLoggedIn ? ["/notifications", "/groups", "/bookmarks"] : [])
+    ...(isLoggedIn ? ["/notifications", "/groups"] : [])
   ];
 
   return (
     <>
       {routes.map((route) => {
-        let icon =
-          pathname === route
-            ? navigationItems[route as keyof typeof navigationItems].solid
-            : navigationItems[route as keyof typeof navigationItems].outline;
+        let icon = isRouteActive(route)
+          ? navigationItems[route as keyof typeof navigationItems].solid
+          : navigationItems[route as keyof typeof navigationItems].outline;
 
         if (refreshingRoute === route) {
           icon = <Spinner className="my-0.5" size="sm" />;
         }
 
         const iconWithIndicator =
-          route === "/notifications" ? (
+          route === "/notifications" ||
+          route === "/" ||
+          route === "/creators" ? (
             <span className="relative">
               {icon}
-              {hasNewNotifications && (
+              {route === "/notifications" && hasNewNotifications ? (
                 <span className="absolute -top-1 -right-1 size-2 rounded-full bg-red-500" />
-              )}
+              ) : null}
+              {route === "/" && pathname !== "/" && exploreCount > 0 ? (
+                <span className="absolute -top-1.5 -right-2 min-w-4 rounded-full border border-white bg-pink-500 px-1 text-center font-semibold text-[10px] text-white leading-4 dark:border-gray-950">
+                  {exploreCount > 9 ? "9+" : exploreCount}
+                </span>
+              ) : null}
+              {route === "/creators" &&
+              !pathname.startsWith("/creators") &&
+              creatorsCount > 0 ? (
+                <span className="absolute -top-1.5 -right-2 min-w-4 rounded-full border border-white bg-pink-500 px-1 text-center font-semibold text-[10px] text-white leading-4 dark:border-gray-950">
+                  {creatorsCount > 9 ? "9+" : creatorsCount}
+                </span>
+              ) : null}
             </span>
           ) : (
             icon

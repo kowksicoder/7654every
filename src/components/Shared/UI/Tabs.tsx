@@ -8,18 +8,38 @@ interface TabsProps {
   setActive: (type: string) => void;
   layoutId: string;
   className?: string;
+  itemClassName?: string;
+  mobileScrollable?: boolean;
 }
 
-const Tabs = ({ tabs, active, setActive, layoutId, className }: TabsProps) => {
+const Tabs = ({
+  tabs,
+  active,
+  setActive,
+  layoutId,
+  className,
+  itemClassName,
+  mobileScrollable = false
+}: TabsProps) => {
   return (
     <MotionConfig transition={{ bounce: 0, duration: 0.4, type: "spring" }}>
       <motion.ul
-        className={cn("mb-0 flex list-none flex-wrap gap-3", className)}
+        className={cn(
+          "mb-0 flex list-none gap-3",
+          mobileScrollable
+            ? "no-scrollbar flex-nowrap overflow-x-auto pb-0.5 md:flex-wrap md:overflow-visible md:pb-0"
+            : "flex-wrap",
+          className
+        )}
         layout
       >
         {tabs.map((tab) => (
           <motion.li
-            className="relative cursor-pointer px-3 py-1.5 text-sm outline-hidden transition-colors"
+            className={cn(
+              "relative cursor-pointer px-3 py-1.5 text-sm outline-hidden transition-colors",
+              mobileScrollable && "shrink-0",
+              itemClassName
+            )}
             key={tab.type}
             layout
             onClick={() => {

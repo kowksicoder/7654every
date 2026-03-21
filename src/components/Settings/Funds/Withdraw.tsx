@@ -6,19 +6,38 @@ interface WithdrawProps {
   currency?: Address;
   value: string;
   refetch: () => void;
+  buttonLabel?: string;
+  title?: string;
+  successMessage?: string;
+  className?: string;
+  outline?: boolean;
+  size?: "sm" | "md" | "lg";
 }
 
-const Withdraw = ({ currency, value, refetch }: WithdrawProps) => {
+const Withdraw = ({
+  currency,
+  value,
+  refetch,
+  buttonLabel = "Withdraw",
+  title = "Withdraw",
+  successMessage = "Withdrawal Successful",
+  className,
+  outline = true,
+  size = "sm"
+}: WithdrawProps) => {
   return (
     <TokenOperation
       buildRequest={(amount) =>
         currency ? { erc20: { currency, value: amount } } : { native: amount }
       }
-      buttonLabel="Withdraw"
+      buttonLabel={buttonLabel}
+      className={className}
+      outline={outline}
       refetch={refetch}
       resultKey="withdraw"
-      successMessage="Withdrawal Successful"
-      title="Withdraw"
+      size={size}
+      successMessage={successMessage}
+      title={title}
       useMutationHook={useWithdrawMutation}
       value={value}
     />
