@@ -1,4 +1,4 @@
-# Hey Monorepo
+# Monorepo
 
 ## Requirements
 
@@ -116,4 +116,3 @@ Convenient Node.js helpers are in the `script` directory:
 
 This project is released under the **GNU AGPL-3.0** license. See the [LICENSE](./LICENSE) file for details
 
-🌸
