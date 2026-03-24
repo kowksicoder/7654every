@@ -1,5 +1,6 @@
 import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "react-router";
 import Loader from "@/components/Shared/Loader";
 import PageLayout from "@/components/Shared/PageLayout";
 import { Button, Card, ErrorMessage } from "@/components/Shared/UI";
@@ -14,7 +15,11 @@ import StaffLogin from "./Login";
 import Overview from "./Overview";
 
 const Staff = () => {
+  const location = useLocation();
   const { displayName, email, sessionToken } = useStaffAdminStore();
+  const defaultSection = location.pathname.endsWith("/fandrops")
+    ? "missions"
+    : "overview";
   const sessionQuery = useQuery({
     enabled: hasSupabaseConfig() && Boolean(sessionToken),
     queryFn: getStaffAdminSession,
@@ -89,7 +94,7 @@ const Staff = () => {
           </Button>
         </div>
       </div>
-      <Overview />
+      <Overview defaultSection={defaultSection} />
     </PageLayout>
   );
 };

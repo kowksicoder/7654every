@@ -29,6 +29,7 @@ import {
   TextArea,
   Toggle
 } from "@/components/Shared/UI";
+import FanDropManager from "@/components/Staff/FanDropManager";
 import { DEFAULT_AVATAR } from "@/data/constants";
 import cn from "@/helpers/cn";
 import formatAddress from "@/helpers/formatAddress";
@@ -43,7 +44,6 @@ import {
   listStaffCreators,
   listStaffE1xpActivity,
   listStaffEarnings,
-  listStaffMissions,
   listStaffProfileLaunches,
   listStaffReferrals,
   listStaffShowcasePosts,
@@ -62,7 +62,6 @@ import {
   STAFF_DASHBOARD_QUERY_KEY,
   STAFF_E1XP_ACTIVITY_QUERY_KEY,
   STAFF_EARNINGS_QUERY_KEY,
-  STAFF_MISSIONS_QUERY_KEY,
   STAFF_PROFILE_LAUNCHES_QUERY_KEY,
   STAFF_REFERRALS_QUERY_KEY,
   STAFF_SHOWCASE_QUERY_KEY,
@@ -177,7 +176,7 @@ const sectionItems: {
   { icon: GiftIcon, key: "referrals", label: "Referrals" },
   { icon: BanknotesIcon, key: "earnings", label: "Earnings" },
   { icon: SparklesIcon, key: "e1xp", label: "E1XP" },
-  { icon: FireIcon, key: "missions", label: "Missions" },
+  { icon: FireIcon, key: "missions", label: "FanDrop" },
   { icon: NewspaperIcon, key: "showcase", label: "Showcase" }
 ];
 
@@ -385,13 +384,18 @@ const EmptyPanel = ({ label }: { label: string }) => (
   </div>
 );
 
-const Overview = () => {
+const Overview = ({
+  defaultSection = "overview"
+}: {
+  defaultSection?: AdminSection;
+}) => {
   const queryClient = useQueryClient();
   const { currentAccount } = useAccountStore();
   const { profile } = useEvery1Store();
   const { displayName: adminDisplayName, email: adminEmail } =
     useStaffAdminStore();
-  const [activeSection, setActiveSection] = useState<AdminSection>("overview");
+  const [activeSection, setActiveSection] =
+    useState<AdminSection>(defaultSection);
   const [userSearch, setUserSearch] = useState("");
   const [coinSearch, setCoinSearch] = useState("");
   const [creatorSearch, setCreatorSearch] = useState("");
@@ -418,6 +422,10 @@ const Overview = () => {
   });
   const [creatorOfWeekForm, setCreatorOfWeekForm] =
     useState<CreatorOfWeekFormState>(createEmptyCreatorOfWeekForm);
+
+  useEffect(() => {
+    setActiveSection(defaultSection);
+  }, [defaultSection]);
   const [specialEventForm, setSpecialEventForm] =
     useState<SpecialEventFormState>(createEmptySpecialEventForm);
   const [showcaseForm, setShowcaseForm] = useState<ShowcaseFormState>(
@@ -495,14 +503,6 @@ const Overview = () => {
       (activeSection === "e1xp" || activeSection === "overview"),
     queryFn: () => listStaffE1xpActivity(60, 0),
     queryKey: [STAFF_E1XP_ACTIVITY_QUERY_KEY],
-    retry: false
-  });
-  const missionsQuery = useQuery({
-    enabled:
-      hasSupabaseConfig() &&
-      (activeSection === "missions" || activeSection === "overview"),
-    queryFn: listStaffMissions,
-    queryKey: [STAFF_MISSIONS_QUERY_KEY],
     retry: false
   });
   const showcaseQuery = useQuery({
@@ -660,7 +660,6 @@ const Overview = () => {
       STAFF_REFERRALS_QUERY_KEY,
       STAFF_EARNINGS_QUERY_KEY,
       STAFF_E1XP_ACTIVITY_QUERY_KEY,
-      STAFF_MISSIONS_QUERY_KEY,
       STAFF_SHOWCASE_QUERY_KEY,
       STAFF_PROFILE_LAUNCHES_QUERY_KEY,
       PUBLIC_EXPLORE_OVERRIDES_QUERY_KEY,
@@ -3532,88 +3531,7 @@ const Overview = () => {
     </div>
   );
 
-  const renderMissions = () => (
-    <div className="space-y-3.5">
-      <div className="grid gap-2.5 sm:grid-cols-2">
-        <AdminMetricCard
-          accentClassName="text-sky-600 dark:text-sky-300"
-          label="Active missions"
-          value={nFormatter(dashboard?.missions.activeMissions || 0, 1)}
-        />
-        <AdminMetricCard
-          accentClassName="text-gray-950 dark:text-gray-50"
-          label="Total missions"
-          value={nFormatter(dashboard?.missions.totalMissions || 0, 1)}
-        />
-      </div>
-
-      <AdminPanelCard
-        description="Track the full mission inventory and how many users have touched each one."
-        title="Mission list"
-      >
-        {missionsQuery.isLoading ? (
-          <Loader className="py-10" message="Loading missions..." />
-        ) : missionsQuery.error ? (
-          <ErrorMessage
-            error={missionsQuery.error}
-            title="Failed to load missions"
-          />
-        ) : missionsQuery.data?.length ? (
-          <div className="space-y-2">
-            {missionsQuery.data.map((mission) => (
-              <div
-                className="grid gap-3 rounded-[1rem] border border-gray-200/70 px-3 py-3 md:grid-cols-[minmax(0,1.6fr)_repeat(4,minmax(0,0.7fr))] dark:border-gray-800/75"
-                key={mission.missionId}
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-gray-950 text-sm dark:text-gray-50">
-                    {mission.title}
-                  </p>
-                  <p className="truncate text-gray-500 text-xs dark:text-gray-400">
-                    {mission.slug}
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-950 text-sm dark:text-gray-50">
-                    {mission.status}
-                  </p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    status
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-950 text-sm dark:text-gray-50">
-                    {nFormatter(mission.rewardE1xp, 1)}
-                  </p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    reward
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-950 text-sm dark:text-gray-50">
-                    {nFormatter(mission.taskCount, 1)}
-                  </p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    tasks
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-950 text-sm dark:text-gray-50">
-                    {nFormatter(mission.participantCount, 1)}
-                  </p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    participants
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyPanel label="No missions found." />
-        )}
-      </AdminPanelCard>
-    </div>
-  );
+  const renderMissions = () => <FanDropManager />;
 
   const renderShowcase = () => (
     <div className="space-y-3.5">

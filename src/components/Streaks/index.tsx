@@ -148,6 +148,10 @@ const Streaks = () => {
       ]);
 
       if (result.claimed) {
+        if (result.notificationId) {
+          setLastToastNotificationId(result.notificationId);
+        }
+
         toast.success(result.missionTitle || "Mission claimed", {
           description: `+${result.rewardE1xp || 0} E1XP added to your balance.`
         });

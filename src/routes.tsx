@@ -2,7 +2,8 @@ import {
   BrowserRouter,
   Navigate,
   Route,
-  Routes as RouterRoutes
+  Routes as RouterRoutes,
+  useParams
 } from "react-router";
 import ViewAccount from "@/components/Account";
 import Bookmarks from "@/components/Bookmarks";
@@ -20,6 +21,7 @@ import Groups from "@/components/Groups";
 import Home from "@/components/Home";
 import Leaderboard from "@/components/Leaderboard";
 import Missions from "@/components/Missions";
+import FanDropDetail from "@/components/Missions/Detail";
 import Notification from "@/components/Notification";
 import Copyright from "@/components/Pages/Copyright";
 import Guidelines from "@/components/Pages/Guidelines";
@@ -46,10 +48,14 @@ import Showcase from "@/components/Showcase";
 import ShowcaseDetail from "@/components/Showcase/Detail";
 import Streaks from "@/components/Streaks";
 import Swap from "@/components/Swap";
-import FanDrop from "@/components/FanDrop";
-import FanDropDetail from "@/components/FanDrop/Detail";
 import RewardsSettings from "./components/Settings/Rewards";
 import Staff from "./components/Staff";
+
+const LegacyFanDropRedirect = () => {
+  const { slug } = useParams();
+
+  return <Navigate replace to={slug ? `/fandrop/${slug}` : "/fandrop"} />;
+};
 
 const Routes = () => {
   return (
@@ -67,9 +73,10 @@ const Routes = () => {
           <Route element={<ShowcaseDetail />} path="showcase/:slug" />
           <Route element={<Swap />} path="swap" />
           <Route element={<Referrals />} path="referrals" />
-          <Route element={<Navigate replace to="/fandrop" />} path="missions" />
-          <Route element={<FanDrop />} path="fandrop" />
+          <Route element={<Missions />} path="fandrop" />
           <Route element={<FanDropDetail />} path="fandrop/:slug" />
+          <Route element={<LegacyFanDropRedirect />} path="missions" />
+          <Route element={<LegacyFanDropRedirect />} path="missions/:slug" />
           <Route element={<Streaks />} path="streaks" />
           <Route element={<Search />} path="search" />
           <Route element={<Groups />} path="groups" />
@@ -115,6 +122,7 @@ const Routes = () => {
           </Route>
           <Route path="staff">
             <Route element={<Staff />} index />
+            <Route element={<Staff />} path="fandrops" />
           </Route>
           <Route element={<Support />} path="support" />
           <Route element={<Terms />} path="terms" />

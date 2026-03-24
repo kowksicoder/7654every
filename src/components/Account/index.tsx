@@ -23,6 +23,7 @@ import {
 } from "@/helpers/getBlockedMessage";
 import { buildAccountFromEvery1Profile } from "@/helpers/privy";
 import { hasSupabaseConfig } from "@/helpers/supabase";
+import useEvery1AccountProfile from "@/hooks/useEvery1AccountProfile";
 import { useAccountQuery } from "@/indexer/generated";
 import { useAccountLinkStore } from "@/store/non-persisted/navigation/useAccountLinkStore";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
@@ -30,6 +31,7 @@ import { useEvery1Store } from "@/store/persisted/useEvery1Store";
 import AccountFeed from "./AccountFeed";
 import DeletedDetails from "./DeletedDetails";
 import Details from "./Details";
+import FanDrops from "./FanDrops";
 import FeedType from "./FeedType";
 import AccountPageShimmer from "./Shimmer";
 
@@ -117,6 +119,7 @@ const ViewAccount = () => {
       : null) ??
     data?.account ??
     cachedAccount;
+  const { profileId: accountProfileId } = useEvery1AccountProfile(account);
 
   if (
     (!username && !address) ||
@@ -210,8 +213,15 @@ const ViewAccount = () => {
         renderEmptyState()
       ) : (
         <>
-          <FeedType feedType={feedType} setFeedType={setFeedType} />
-          {currentAccount?.address === account?.address && <NewPost />}
+          <FeedType
+            feedType={feedType}
+            setFeedType={setFeedType}
+            showFanDrops={Boolean(accountProfileId)}
+          />
+          {currentAccount?.address === account?.address &&
+          feedType !== AccountFeedType.FanDrops ? (
+            <NewPost />
+          ) : null}
           {(feedType === AccountFeedType.Feed ||
             feedType === AccountFeedType.Replies ||
             feedType === AccountFeedType.Media ||
@@ -222,6 +232,13 @@ const ViewAccount = () => {
               username={accountInfo.username}
             />
           )}
+          {feedType === AccountFeedType.FanDrops ? (
+            <FanDrops
+              creatorName={accountInfo.name}
+              creatorProfileId={accountProfileId}
+              isCurrentProfile={currentAccount?.address === account?.address}
+            />
+          ) : null}
         </>
       )}
     </PageLayout>

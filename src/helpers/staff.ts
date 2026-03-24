@@ -17,6 +17,7 @@ import type {
   StaffDashboard,
   StaffE1xpActivityRow,
   StaffEarningsRow,
+  StaffFanDropRow,
   StaffMissionRow,
   StaffMutationResult,
   StaffProfileLaunchRow,
@@ -36,6 +37,7 @@ export const STAFF_REFERRALS_QUERY_KEY = "staff-referrals";
 export const STAFF_EARNINGS_QUERY_KEY = "staff-earnings";
 export const STAFF_E1XP_ACTIVITY_QUERY_KEY = "staff-e1xp-activity";
 export const STAFF_MISSIONS_QUERY_KEY = "staff-missions";
+export const STAFF_FANDROPS_QUERY_KEY = "staff-fandrops";
 export const STAFF_SHOWCASE_QUERY_KEY = "staff-showcase";
 export const STAFF_CREATORS_QUERY_KEY = "staff-creators";
 export const STAFF_VERIFICATION_REQUESTS_QUERY_KEY =
@@ -618,6 +620,98 @@ export const listStaffMissions = async () => {
     title: row.title
   })) satisfies StaffMissionRow[];
 };
+
+export const listStaffFanDrops = async () => {
+  const rows = await callStaffRpc<
+    Array<{
+      about: null | string;
+      banner_url: null | string;
+      buy_amount: null | number | string;
+      buy_is_optional: boolean;
+      cover_label: null | string;
+      created_at: string;
+      creator_name: null | string;
+      creator_profile_id: null | string;
+      creator_username: null | string;
+      creator_wallet_address: null | string;
+      ends_at: null | string;
+      mission_id: string;
+      participant_count: number | string;
+      referral_target: number | string;
+      reward_e1xp: number | string;
+      reward_pool_label: null | string;
+      slug: string;
+      starts_at: null | string;
+      status: string;
+      subtitle: null | string;
+      task_count: number | string;
+      title: string;
+    }>
+  >("list_staff_fandrops");
+
+  return rows.map((row) => ({
+    about: row.about,
+    bannerUrl: row.banner_url,
+    buyAmount:
+      row.buy_amount === null || row.buy_amount === undefined
+        ? null
+        : toNumber(row.buy_amount),
+    buyIsOptional: row.buy_is_optional,
+    coverLabel: row.cover_label,
+    createdAt: row.created_at,
+    creatorName: row.creator_name,
+    creatorProfileId: row.creator_profile_id,
+    creatorUsername: row.creator_username,
+    creatorWalletAddress: row.creator_wallet_address,
+    endsAt: row.ends_at,
+    missionId: row.mission_id,
+    participantCount: toNumber(row.participant_count),
+    referralTarget: toNumber(row.referral_target),
+    rewardE1xp: toNumber(row.reward_e1xp),
+    rewardPoolLabel: row.reward_pool_label,
+    slug: row.slug,
+    startsAt: row.starts_at,
+    status: row.status,
+    subtitle: row.subtitle,
+    taskCount: toNumber(row.task_count),
+    title: row.title
+  })) satisfies StaffFanDropRow[];
+};
+
+export const staffUpsertFanDropCampaign = async (input: {
+  about?: null | string;
+  bannerUrl?: null | string;
+  buyAmount?: null | number;
+  coverLabel?: null | string;
+  creatorProfileId: string;
+  endsAt?: null | string;
+  isBuyOptional?: boolean;
+  missionId?: null | string;
+  referralTarget?: number;
+  rewardE1xp?: number;
+  rewardPoolLabel?: null | string;
+  startsAt?: null | string;
+  status?: "active" | "archived" | "completed" | "draft" | "paused";
+  subtitle?: null | string;
+  title: string;
+}) =>
+  callStaffRpc<StaffMutationResult>("staff_upsert_fandrop_campaign", {
+    input_about: input.about || null,
+    input_banner_url: input.bannerUrl || null,
+    input_buy_amount: input.buyAmount ?? null,
+    input_cover_label: input.coverLabel || null,
+    input_creator_profile_id: input.creatorProfileId,
+    input_ends_at: input.endsAt || null,
+    input_is_buy_optional: input.isBuyOptional ?? true,
+    input_mission_id: input.missionId || null,
+    input_referral_target: input.referralTarget ?? 2,
+    input_reward_e1xp: input.rewardE1xp ?? 0,
+    input_reward_pool_label: input.rewardPoolLabel || null,
+    input_starts_at: input.startsAt || null,
+    input_status: input.status || "draft",
+    input_subtitle: input.subtitle || null,
+    input_title: input.title
+  });
 
 export const listStaffShowcasePosts = async () => {
   const rows = await callStaffRpc<

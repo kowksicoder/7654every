@@ -19,6 +19,13 @@ import type {
   Every1CommunityVerificationRequestResult,
   Every1EngagementNudgeResult,
   Every1EngagementNudgeSignals,
+  Every1FanDropCampaign,
+  Every1FanDropCampaignNotificationInput,
+  Every1FanDropJoinResult,
+  Every1FanDropNotificationSyncResult,
+  Every1FanDropParticipation,
+  Every1FanDropUpsertInput,
+  Every1FanDropUpsertResult,
   Every1FollowListProfile,
   Every1FollowMutationResult,
   Every1FollowRelationship,
@@ -45,6 +52,9 @@ export const EVERY1_NOTIFICATION_COUNT_QUERY_KEY = "every1-notification-count";
 export const EVERY1_DAILY_STREAK_DASHBOARD_QUERY_KEY =
   "every1-daily-streak-dashboard";
 export const EVERY1_MISSIONS_QUERY_KEY = "every1-missions";
+export const EVERY1_FANDROPS_QUERY_KEY = "every1-fandrops";
+export const EVERY1_FANDROP_PARTICIPATION_QUERY_KEY =
+  "every1-fandrop-participation";
 export const EVERY1_MOBILE_NAV_BADGE_COUNTS_QUERY_KEY =
   "every1-mobile-nav-badge-counts";
 export const EVERY1_PROFILE_SOCIAL_ACCOUNTS_QUERY_KEY =
@@ -641,6 +651,40 @@ export const getProfileMissions = async (
     input_task_type: taskType || null
   });
 
+export const getProfileFanDrops = async ({
+  profileId,
+  slug
+}: {
+  profileId?: null | string;
+  slug?: null | string;
+} = {}) =>
+  callRpc<Every1FanDropCampaign[]>("get_profile_fandrops", {
+    input_profile_id: profileId || null,
+    input_slug: slug || null
+  });
+
+export const upsertProfileFanDropCampaign = async (
+  profileId: string,
+  input: Every1FanDropUpsertInput
+) =>
+  callRpc<Every1FanDropUpsertResult>("upsert_profile_fandrop_campaign", {
+    input_about: input.about || null,
+    input_banner_url: input.bannerUrl || null,
+    input_buy_amount: input.buyAmount ?? null,
+    input_cover_label: input.coverLabel || null,
+    input_ends_at: input.endsAt || null,
+    input_is_buy_optional: input.isBuyOptional ?? true,
+    input_mission_id: input.missionId || null,
+    input_profile_id: profileId,
+    input_referral_target: input.referralTarget ?? 2,
+    input_reward_e1xp: input.rewardE1xp ?? 0,
+    input_reward_pool_label: input.rewardPoolLabel || null,
+    input_starts_at: input.startsAt || null,
+    input_status: input.status || "draft",
+    input_subtitle: input.subtitle || null,
+    input_title: input.title
+  });
+
 export const claimMissionReward = async (
   profileId: string,
   missionId: string
@@ -649,6 +693,46 @@ export const claimMissionReward = async (
     input_mission_id: missionId,
     input_profile_id: profileId
   });
+
+export const syncFanDropNotifications = async (
+  profileId: string,
+  campaigns: Every1FanDropCampaignNotificationInput[]
+) =>
+  callRpc<Every1FanDropNotificationSyncResult>(
+    "sync_profile_fandrop_notifications",
+    {
+      input_campaigns: campaigns,
+      input_profile_id: profileId
+    }
+  );
+
+export const joinFanDropCampaign = async (
+  profileId: string,
+  campaign: Every1FanDropCampaignNotificationInput
+) =>
+  callRpc<Every1FanDropJoinResult>("join_fandrop_campaign", {
+    input_campaign_slug: campaign.slug,
+    input_campaign_title: campaign.title,
+    input_creator_name: campaign.creatorName,
+    input_profile_id: profileId,
+    input_reward_pool_label: campaign.rewardPoolLabel
+  });
+
+export const listProfileFanDropParticipation = async (profileId: string) => {
+  const rows = await callRpc<
+    Array<{
+      campaign_slug: string;
+      joined_at: string;
+    }>
+  >("list_profile_fandrop_participation", {
+    input_profile_id: profileId
+  });
+
+  return rows.map((row) => ({
+    campaignSlug: row.campaign_slug,
+    joinedAt: row.joined_at
+  })) satisfies Every1FanDropParticipation[];
+};
 
 export const listProfileNotifications = async (
   profileId: string,

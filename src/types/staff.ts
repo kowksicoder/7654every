@@ -176,6 +176,31 @@ export interface StaffMissionRow {
   endsAt: null | string;
 }
 
+export interface StaffFanDropRow {
+  about: null | string;
+  bannerUrl: null | string;
+  buyAmount: null | number;
+  buyIsOptional: boolean;
+  coverLabel: null | string;
+  createdAt: string;
+  creatorName: null | string;
+  creatorProfileId: null | string;
+  creatorUsername: null | string;
+  creatorWalletAddress: null | string;
+  endsAt: null | string;
+  missionId: string;
+  participantCount: number;
+  referralTarget: number;
+  rewardE1xp: number;
+  rewardPoolLabel: null | string;
+  slug: string;
+  startsAt: null | string;
+  status: string;
+  subtitle: null | string;
+  taskCount: number;
+  title: string;
+}
+
 export interface StaffCreatorRow {
   profileId: string;
   displayName: null | string;

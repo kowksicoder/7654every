@@ -491,8 +491,101 @@ export interface MissionClaimResult {
   alreadyClaimed: boolean;
   missionId: string;
   missionTitle?: string;
+  notificationId?: null | string;
   rewardE1xp?: number;
   reason?: string;
+}
+
+export interface Every1FanDropCampaignNotificationInput {
+  creatorName: string;
+  rewardPoolLabel: string;
+  slug: string;
+  state: "completed" | "joined" | "live";
+  title: string;
+}
+
+export interface Every1FanDropNotificationSyncResult {
+  createdCount: number;
+  deliveredCampaignSlugs: string[];
+}
+
+export interface Every1FanDropJoinResult {
+  alreadyJoined: boolean;
+  campaignSlug: string;
+  joined: boolean;
+  joinedAt?: null | string;
+  notificationId?: null | string;
+  reason?: string;
+}
+
+export interface Every1FanDropParticipation {
+  campaignSlug: string;
+  joinedAt: string;
+}
+
+export interface Every1FanDropTask {
+  currentValue: number;
+  id: string;
+  isOptional: boolean;
+  label: string;
+  progressLabel: null | string;
+  state: "complete" | "optional" | "todo";
+  targetValue: number;
+}
+
+export interface Every1FanDropCampaign {
+  about: null | string;
+  bannerUrl: null | string;
+  coverLabel: null | string;
+  creatorHandle: null | string;
+  creatorName: null | string;
+  creatorProfileId: null | string;
+  ctaLabel: string;
+  endsAt: null | string;
+  id: string;
+  isJoined: boolean;
+  missionId: string;
+  participantCount: number;
+  progressComplete: number;
+  progressTotal: number;
+  rank: null | number;
+  rankLabel: string;
+  rewardE1xp: number;
+  rewardPoolLabel: null | string;
+  slug: string;
+  startsAt: null | string;
+  status: "active" | "archived" | "completed" | "draft" | "paused";
+  state: "completed" | "ended" | "joined" | "live";
+  subtitle: null | string;
+  tasks: Every1FanDropTask[];
+  timeLabel: string;
+  title: string;
+}
+
+export interface Every1FanDropUpsertInput {
+  about?: null | string;
+  bannerUrl?: null | string;
+  buyAmount?: null | number;
+  coverLabel?: null | string;
+  endsAt?: null | string;
+  isBuyOptional?: boolean;
+  missionId?: null | string;
+  referralTarget?: number;
+  rewardE1xp?: number;
+  rewardPoolLabel?: null | string;
+  startsAt?: null | string;
+  status?: "active" | "archived" | "completed" | "draft" | "paused";
+  subtitle?: null | string;
+  title: string;
+}
+
+export interface Every1FanDropUpsertResult {
+  created?: boolean;
+  creatorProfileId?: null | string;
+  id?: null | string;
+  slug?: null | string;
+  status?: null | string;
+  title?: null | string;
 }
 
 export interface ReferralDashboard {

@@ -1,9 +1,10 @@
-import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
+import { XCircleIcon } from "@heroicons/react/24/solid";
 import { usePrivy } from "@privy-io/react-auth";
 import { useIsClient } from "@uidotdev/usehooks";
 import { memo, useEffect, useMemo } from "react";
 import { Outlet, useLocation } from "react-router";
 import { Toaster, type ToasterProps } from "sonner";
+import NotificationIcon from "@/components/Notification/NotificationIcon";
 import FullPageLoader from "@/components/Shared/FullPageLoader";
 import GlobalAlerts from "@/components/Shared/GlobalAlerts";
 import GlobalModals from "@/components/Shared/GlobalModals";
@@ -99,9 +100,17 @@ const Layout = () => {
     <>
       <Toaster
         icons={{
-          error: <XCircleIcon className="size-5" />,
-          loading: <Spinner size="xs" />,
-          success: <CheckCircleIcon className="size-5" />
+          error: (
+            <span className="inline-flex size-7 items-center justify-center rounded-full bg-rose-500/12 ring-1 ring-rose-500/18 dark:bg-rose-500/14 dark:ring-rose-400/20">
+              <XCircleIcon className="size-3.5 text-rose-600 dark:text-rose-300" />
+            </span>
+          ),
+          loading: (
+            <span className="inline-flex size-7 items-center justify-center rounded-full bg-sky-500/12 ring-1 ring-sky-500/18 dark:bg-sky-500/14 dark:ring-sky-400/20">
+              <Spinner size="xs" />
+            </span>
+          ),
+          success: <NotificationIcon kind="verification" />
         }}
         position="bottom-right"
         theme={theme as ToasterProps["theme"]}

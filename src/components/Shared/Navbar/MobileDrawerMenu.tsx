@@ -2,7 +2,7 @@ import {
   ArrowRightStartOnRectangleIcon,
   Cog6ToothIcon,
   DocumentTextIcon,
-  FlagIcon,
+  FireIcon,
   GiftIcon,
   InformationCircleIcon,
   PlusCircleIcon,
@@ -34,6 +34,15 @@ const isActivePath = (pathname: string, path: string) => {
       pathname.startsWith("/referrals/") ||
       pathname === "/streaks" ||
       pathname.startsWith("/streaks/")
+    );
+  }
+
+  if (path === "/fandrop") {
+    return (
+      pathname === "/fandrop" ||
+      pathname.startsWith("/fandrop/") ||
+      pathname === "/missions" ||
+      pathname.startsWith("/missions/")
     );
   }
 
@@ -91,7 +100,7 @@ const MobileDrawerMenu = () => {
         ]
       : []),
     {
-      icon: <FlagIcon className="size-4.5" />,
+      icon: <FireIcon className="size-4.5" />,
       label: "FanDrop",
       path: "/fandrop"
     },
@@ -124,7 +133,7 @@ const MobileDrawerMenu = () => {
       path: "/referrals"
     },
     {
-      icon: <FlagIcon className="size-4.5" />,
+      icon: <FireIcon className="size-4.5" />,
       label: "FanDrop",
       path: "/fandrop"
     }

@@ -25,6 +25,7 @@ export enum HomeFeedSort {
 
 export enum AccountFeedType {
   Collects = "COLLECTS",
+  FanDrops = "FANDROPS",
   Feed = "FEED",
   Media = "MEDIA",
   Replies = "REPLIES"

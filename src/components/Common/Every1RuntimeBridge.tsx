@@ -8,6 +8,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
+import NotificationIcon from "@/components/Notification/NotificationIcon";
 import { Button, Image, Modal } from "@/components/Shared/UI";
 import {
   buildReferralLink,
@@ -25,11 +26,13 @@ import {
   EVERY1_REFERRAL_DASHBOARD_QUERY_KEY,
   getActiveSpecialEventPopup,
   getProfileEngagementNudgeSignals,
+  getProfileFanDrops,
   markMobileNavBadgeSeen,
   normalizeReferralCode,
   recordDailyLoginStreak,
   syncEvery1Profile,
-  syncExploreListingEvents
+  syncExploreListingEvents,
+  syncFanDropNotifications
 } from "@/helpers/every1";
 import getCoinPath from "@/helpers/getCoinPath";
 import getZoraApiKey from "@/helpers/getZoraApiKey";
@@ -46,7 +49,10 @@ import { getSupabaseClient, hasSupabaseConfig } from "@/helpers/supabase";
 import useEvery1Notifications from "@/hooks/useEvery1Notifications";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
 import { useEvery1Store } from "@/store/persisted/useEvery1Store";
-import type { Every1ActivePopupCampaign } from "@/types/every1";
+import type {
+  Every1ActivePopupCampaign,
+  Every1Notification
+} from "@/types/every1";
 
 const zoraApiKey = getZoraApiKey();
 
@@ -111,6 +117,10 @@ const normalizeNotificationTarget = (value?: null | string) => {
   return /^0x[a-fA-F0-9]{40}$/.test(trimmed) ? getCoinPath(trimmed) : trimmed;
 };
 
+const getNotificationToastIcon = (
+  kind: Every1Notification["kind"] | "browser"
+) => <NotificationIcon kind={kind} />;
+
 const Every1RuntimeBridge = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -128,6 +138,7 @@ const Every1RuntimeBridge = () => {
   const hasSyncedProfile = useRef(false);
   const lastStreakCheckKey = useRef<null | string>(null);
   const lastBadgeMarkKey = useRef<null | string>(null);
+  const lastFanDropSyncKey = useRef<null | string>(null);
   const exploreSyncInFlight = useRef(false);
   const [activePopupCampaign, setActivePopupCampaign] =
     useState<Every1ActivePopupCampaign | null>(null);
@@ -220,6 +231,79 @@ const Every1RuntimeBridge = () => {
   }, [currentAccount, hasConfiguredSupabase, queryClient, setProfile]);
 
   useEffect(() => {
+    if (!hasConfiguredSupabase || !profile?.id) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncLiveFanDrops = async () => {
+      try {
+        const campaigns = await getProfileFanDrops({
+          profileId: profile.id
+        });
+
+        if (cancelled || campaigns.length === 0) {
+          return;
+        }
+
+        const activeFanDropCampaigns = campaigns
+          .filter((campaign) => campaign.state !== "ended")
+          .map((campaign) => ({
+            creatorName: campaign.creatorName || "Every1",
+            rewardPoolLabel: campaign.rewardPoolLabel || "Reward pool live",
+            slug: campaign.slug,
+            state:
+              campaign.state === "completed" ||
+              campaign.state === "joined" ||
+              campaign.state === "live"
+                ? campaign.state
+                : "live",
+            title: campaign.title
+          }));
+
+        if (activeFanDropCampaigns.length === 0) {
+          return;
+        }
+
+        const syncKey = `${profile.id}:${activeFanDropCampaigns.map((campaign) => `${campaign.slug}:${campaign.state}`).join("|")}`;
+
+        if (lastFanDropSyncKey.current === syncKey) {
+          return;
+        }
+
+        lastFanDropSyncKey.current = syncKey;
+
+        const result = await syncFanDropNotifications(
+          profile.id,
+          activeFanDropCampaigns
+        );
+
+        if (cancelled || result.createdCount <= 0) {
+          return;
+        }
+
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [EVERY1_NOTIFICATIONS_QUERY_KEY, profile.id]
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [EVERY1_NOTIFICATION_COUNT_QUERY_KEY, profile.id]
+          })
+        ]);
+      } catch (error) {
+        console.error("Failed to sync FanDrop notifications", error);
+      }
+    };
+
+    void syncLiveFanDrops();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasConfiguredSupabase, profile?.id, queryClient]);
+
+  useEffect(() => {
     if (!profile?.id || !supportsBrowserPush()) {
       return;
     }
@@ -235,7 +319,8 @@ const Every1RuntimeBridge = () => {
           window.localStorage.setItem(promptStorageKey, "enabled");
           toast.success("Browser alerts enabled", {
             description:
-              "You’ll now get real Every1 push notifications for rewards, drops, and hot trading."
+              "You’ll now get real Every1 push notifications for rewards, drops, and hot trading.",
+            icon: getNotificationToastIcon("browser")
           });
         }
       } catch (error) {
@@ -244,7 +329,8 @@ const Every1RuntimeBridge = () => {
         if (!cancelled) {
           toast.error("Could not enable browser alerts", {
             description:
-              "Check your browser notification settings and try again."
+              "Check your browser notification settings and try again.",
+            icon: getNotificationToastIcon("browser")
           });
         }
       }
@@ -284,7 +370,9 @@ const Every1RuntimeBridge = () => {
               }
 
               if (!cancelled) {
-                toast.message("Browser alerts stayed off for now.");
+                toast.message("Browser alerts stayed off for now.", {
+                  icon: getNotificationToastIcon("browser")
+                });
               }
             });
           }
@@ -298,6 +386,7 @@ const Every1RuntimeBridge = () => {
         description:
           "Enable device alerts for rewards, hot trading, drops, and leaderboard moves.",
         duration: 12000,
+        icon: getNotificationToastIcon("browser"),
         id: "enable-browser-push"
       });
     };
@@ -331,7 +420,8 @@ const Every1RuntimeBridge = () => {
           toast.success("Referral linked", {
             description: `Your inviter earned ${
               result.e1xpAwarded || 50
-            } E1XP now. Your first trade unlocks more.`
+            } E1XP now. Your first trade unlocks more.`,
+            icon: getNotificationToastIcon("referral")
           });
         }
 
@@ -411,9 +501,15 @@ const Every1RuntimeBridge = () => {
       newestUnreadNotification.kind === "welcome" ||
       isSpecialEventNotification
     ) {
-      toast.success(newestUnreadNotification.title, { description });
+      toast.success(newestUnreadNotification.title, {
+        description,
+        icon: getNotificationToastIcon(newestUnreadNotification.kind)
+      });
     } else {
-      toast(newestUnreadNotification.title, { description });
+      toast(newestUnreadNotification.title, {
+        description,
+        icon: getNotificationToastIcon(newestUnreadNotification.kind)
+      });
     }
 
     setLastToastNotificationId(newestUnreadNotification.id);
@@ -454,7 +550,8 @@ const Every1RuntimeBridge = () => {
         }
 
         toast.success(`Daily streak claimed: day ${result.currentStreak}`, {
-          description: `+${result.rewardE1xp} E1XP added to your balance.`
+          description: `+${result.rewardE1xp} E1XP added to your balance.`,
+          icon: getNotificationToastIcon("streak")
         });
 
         await Promise.all([

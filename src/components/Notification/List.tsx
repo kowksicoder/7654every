@@ -1,17 +1,6 @@
-import {
-  BellIcon,
-  ChatBubbleOvalLeftEllipsisIcon,
-  CheckCircleIcon,
-  FireIcon,
-  GiftIcon,
-  HeartIcon,
-  SparklesIcon,
-  UserGroupIcon,
-  UserPlusIcon
-} from "@heroicons/react/24/outline";
 import { useQueryClient } from "@tanstack/react-query";
-import type { ReactNode } from "react";
 import { memo, useEffect, useMemo, useRef } from "react";
+import NotificationIcon from "@/components/Notification/NotificationIcon";
 import Loader from "@/components/Shared/Loader";
 import { Card, EmptyState, ErrorMessage, Image } from "@/components/Shared/UI";
 import { NotificationFeedType } from "@/data/enums";
@@ -70,24 +59,6 @@ const FEED_KIND_MAP: Record<
     "verification",
     "welcome"
   ]
-};
-
-const kindIconMap: Record<Every1Notification["kind"], ReactNode> = {
-  comment: <ChatBubbleOvalLeftEllipsisIcon className="size-5" />,
-  community: <UserGroupIcon className="size-5" />,
-  follow: <UserPlusIcon className="size-5" />,
-  like: <HeartIcon className="size-5" />,
-  mission: <SparklesIcon className="size-5" />,
-  nudge: <FireIcon className="size-5" />,
-  payment: <GiftIcon className="size-5" />,
-  referral: <UserPlusIcon className="size-5" />,
-  reward: <GiftIcon className="size-5" />,
-  share: <SparklesIcon className="size-5" />,
-  streak: <SparklesIcon className="size-5" />,
-  system: <BellIcon className="size-5" />,
-  toast: <BellIcon className="size-5" />,
-  verification: <CheckCircleIcon className="size-5" />,
-  welcome: <SparklesIcon className="size-5" />
 };
 
 const List = ({ feedType }: ListProps) => {
@@ -163,7 +134,7 @@ const List = ({ feedType }: ListProps) => {
   if (!notifications?.length) {
     return (
       <EmptyState
-        icon={<BellIcon className="size-8" />}
+        icon={<NotificationIcon kind="system" size="lg" />}
         message="Inbox zero!"
       />
     );
@@ -188,13 +159,13 @@ const List = ({ feedType }: ListProps) => {
                 src={notification.actorAvatarUrl}
               />
             ) : (
-              <div className="flex size-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 md:size-10 dark:bg-gray-900 dark:text-gray-300">
-                {kindIconMap[notification.kind]}
-              </div>
+              <NotificationIcon kind={notification.kind} size="lg" />
             )}
-            <span className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-white text-gray-600 shadow-sm ring-1 ring-gray-200 md:-right-1 md:-bottom-1 md:size-5 dark:bg-black dark:text-gray-300 dark:ring-gray-800">
-              {kindIconMap[notification.kind]}
-            </span>
+            <NotificationIcon
+              className="absolute -right-0.5 -bottom-0.5 bg-white md:-right-1 md:-bottom-1 dark:bg-black"
+              kind={notification.kind}
+              size="sm"
+            />
           </div>
 
           <div className="min-w-0 flex-1">

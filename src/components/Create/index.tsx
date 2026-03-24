@@ -21,6 +21,7 @@ import { useAccount, useConfig, useWalletClient } from "wagmi";
 import { getWalletClient } from "wagmi/actions";
 import evLogo from "@/assets/fonts/evlogo.jpg";
 import MetaTags from "@/components/Common/MetaTags";
+import { ActionStatusModal } from "@/components/Shared/UI";
 import { BASE_RPC_URL, ZORA_API_KEY } from "@/data/constants";
 import cn from "@/helpers/cn";
 import { getSupabaseClient, hasSupabaseConfig } from "@/helpers/supabase";
@@ -35,6 +36,11 @@ const CREATE_BANNER_IMAGE =
 const NAIRA_SYMBOL = "\u20A6";
 
 type CreateTab = "community" | "creator";
+type CreateStatusModalState = null | {
+  description?: string;
+  title: string;
+  tone: "pending" | "success";
+};
 
 const slugifyValue = (value: string) =>
   value
@@ -68,6 +74,7 @@ const Create = () => {
   const [showFeeSheet, setShowFeeSheet] = useState(false);
   const [mobileStep, setMobileStep] = useState<"form" | "ticker">("ticker");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusModal, setStatusModal] = useState<CreateStatusModalState>(null);
 
   const publicClient = useMemo(
     () =>
@@ -285,6 +292,13 @@ const Create = () => {
 
     try {
       setIsSubmitting(true);
+      setStatusModal({
+        description: isCommunity
+          ? "Publishing your community coin and linked group."
+          : "Publishing your creator coin to Every1 and Base.",
+        title: "Launching your coin, please wait",
+        tone: "pending"
+      });
       await handleWrongNetwork({ chainId: base.id });
       const client =
         (await getWalletClient(config, { chainId: base.id })) || walletClient;
@@ -337,11 +351,12 @@ const Create = () => {
           coverImageUrl: metadataUpload.metadata.image || null,
           metadataUri: metadataUpload.url
         });
-
-        toast.success("Community coin created", {
-          description: "Your coin and community are live together now."
+        setStatusModal({
+          description: "You have a new coin now, start making money!",
+          title: "Nice work!",
+          tone: "success"
         });
-
+        await new Promise((resolve) => setTimeout(resolve, 1600));
         navigate(`/g/${result?.slug || slugifyValue(name.trim())}?created=1`);
       } else {
         await persistCreatorLaunch({
@@ -349,14 +364,16 @@ const Create = () => {
           coverImageUrl: metadataUpload.metadata.image || null,
           metadataUri: metadataUpload.url
         });
-
-        toast.success("Coin created", {
-          description: "Your launch is live and ready to share."
+        setStatusModal({
+          description: "You have a new coin now, start making money!",
+          title: "Nice work!",
+          tone: "success"
         });
-
+        await new Promise((resolve) => setTimeout(resolve, 1600));
         navigate(`/coins/${deployedCoinAddress}?created=1`);
       }
     } catch (error) {
+      setStatusModal(null);
       toast.error(
         isCommunity
           ? "Failed to create community coin"
@@ -954,6 +971,14 @@ const Create = () => {
             </div>
           </div>
         ) : null}
+
+        <ActionStatusModal
+          description={statusModal?.description}
+          label={isCommunity ? "Community coin" : "Creator coin"}
+          show={Boolean(statusModal)}
+          title={statusModal?.title || ""}
+          tone={statusModal?.tone || "pending"}
+        />
       </div>
     </>
   );

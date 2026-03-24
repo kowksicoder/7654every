@@ -1,10 +1,11 @@
 import {
+  ArrowLeftIcon,
   BellIcon,
   ChatBubbleOvalLeftEllipsisIcon,
   TrophyIcon
 } from "@heroicons/react/24/solid";
 import { memo, useCallback } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import evLogo from "@/assets/fonts/evlogo.jpg";
 import { Image } from "@/components/Shared/UI";
 import { DEFAULT_COLLECT_TOKEN, NATIVE_TOKEN_SYMBOL } from "@/data/constants";
@@ -21,9 +22,11 @@ import { useEvery1Store } from "@/store/persisted/useEvery1Store";
 
 const MobileHeader = () => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { currentAccount } = useAccountStore();
   const { profile } = useEvery1Store();
   const { setShow: setShowMobileDrawer } = useMobileDrawerModalStore();
+  const isHomePage = pathname === "/";
   const hasNewNotifications = useHasNewNotifications();
   const { leaderboardCount } = useEvery1MobileNavBadgeCounts();
   const unreadEvery1Count = useEvery1UnreadCount();
@@ -52,6 +55,15 @@ const MobileHeader = () => {
     setShowMobileDrawer(true);
   }, [setShowMobileDrawer]);
 
+  const handleBack = useCallback(() => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate("/");
+  }, [navigate]);
+
   const nativeBalance = balanceData?.balancesBulk.find(
     (balance) => balance.__typename === "NativeAmount"
   );
@@ -74,33 +86,44 @@ const MobileHeader = () => {
     <header className="sticky top-0 z-[6] bg-gray-50 px-4 py-3 md:hidden dark:bg-black">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          {currentAccount ? (
-            <button
-              aria-label="Open account menu"
-              onClick={handleDrawerOpen}
-              type="button"
-            >
-              <Image
-                alt={currentAccount.address}
-                className="size-8 rounded-full object-cover"
-                height={32}
-                src={getAvatar(currentAccount)}
-                width={32}
-              />
-            </button>
+          {isHomePage ? (
+            currentAccount ? (
+              <button
+                aria-label="Open account menu"
+                onClick={handleDrawerOpen}
+                type="button"
+              >
+                <Image
+                  alt={currentAccount.address}
+                  className="size-8 rounded-full object-cover"
+                  height={32}
+                  src={getAvatar(currentAccount)}
+                  width={32}
+                />
+              </button>
+            ) : (
+              <button
+                aria-label="Open menu"
+                onClick={handleDrawerOpen}
+                type="button"
+              >
+                <Image
+                  alt="Login"
+                  className="size-8 rounded-full object-cover"
+                  height={32}
+                  src={evLogo}
+                  width={32}
+                />
+              </button>
+            )
           ) : (
             <button
-              aria-label="Open menu"
-              onClick={handleDrawerOpen}
+              aria-label="Go back"
+              className="flex size-8 items-center justify-center rounded-full text-gray-800 transition-colors hover:bg-gray-100 hover:text-gray-950 dark:text-gray-200 dark:hover:bg-gray-900 dark:hover:text-white"
+              onClick={handleBack}
               type="button"
             >
-              <Image
-                alt="Login"
-                className="size-8 rounded-full object-cover"
-                height={32}
-                src={evLogo}
-                width={32}
-              />
+              <ArrowLeftIcon className="size-4.5" />
             </button>
           )}
         </div>

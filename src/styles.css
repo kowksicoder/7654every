@@ -24,6 +24,43 @@
   }
 }
 
+@keyframes every1-icon-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes every1-icon-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.92;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes every1-confetti-burst {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) rotate(0deg) scale(0.82);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--every1-confetti-x-end, 0), 108px, 0)
+      rotate(var(--every1-confetti-rotate, 180deg)) scale(1);
+  }
+}
+
 @layer base {
   :root {
     @apply font-platform text-black dark:text-white;
@@ -49,6 +86,24 @@
     @apply animate-shimmer;
     @apply bg-gray-300;
     @apply dark:bg-gray-600;
+  }
+
+  .every1-icon-float {
+    animation: every1-icon-float 2.8s ease-in-out infinite;
+  }
+
+  .every1-icon-pulse {
+    animation: every1-icon-pulse 2.4s ease-in-out infinite;
+  }
+
+  .every1-confetti-piece {
+    position: absolute;
+    top: 22px;
+    width: 8px;
+    height: 14px;
+    border-radius: 999px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+    animation: every1-confetti-burst 1.2s ease-out forwards;
   }
 
   .menu-item {
@@ -178,6 +233,9 @@
   }
 
   .every1-toast [data-icon] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transform: scale(0.9);
   }
 

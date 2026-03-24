@@ -3,8 +3,8 @@ import {
   BellIcon as BellOutline,
   PlusCircleIcon as CreateOutline,
   StarIcon as CreatorsOutline,
+  FireIcon as FanDropOutline,
   TrophyIcon as LeaderboardOutline,
-  FlagIcon as MissionsOutline,
   GiftIcon as ReferralsOutline,
   ShieldCheckIcon as StaffOutline,
   ArrowsRightLeftIcon as SwapOutline,
@@ -14,8 +14,8 @@ import {
   BellIcon as BellSolid,
   PlusCircleIcon as CreateSolid,
   StarIcon as CreatorsSolid,
+  FireIcon as FanDropSolid,
   TrophyIcon as LeaderboardSolid,
-  FlagIcon as MissionsSolid,
   GiftIcon as ReferralsSolid,
   ShieldCheckIcon as StaffSolid,
   ArrowsRightLeftIcon as SwapSolid,
@@ -64,6 +64,11 @@ const navigationItems = {
     outline: <CreatorsOutline className="size-6" />,
     solid: <CreatorsSolid className="size-6" />,
     title: "Creators"
+  },
+  "/fandrop": {
+    outline: <FanDropOutline className="size-6" />,
+    solid: <FanDropSolid className="size-6" />,
+    title: "FanDrop"
   },
   "/groups": {
     outline: <UserGroupOutline className="size-6" />,
@@ -133,6 +138,15 @@ const NavItems = memo(({ isLoggedIn }: { isLoggedIn: boolean }) => {
         pathname.startsWith("/referrals/") ||
         pathname === "/streaks" ||
         pathname.startsWith("/streaks/")
+      );
+    }
+
+    if (route === "/fandrop") {
+      return (
+        pathname === "/fandrop" ||
+        pathname.startsWith("/fandrop/") ||
+        pathname === "/missions" ||
+        pathname.startsWith("/missions/")
       );
     }
 
