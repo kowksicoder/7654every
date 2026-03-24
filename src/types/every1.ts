@@ -87,6 +87,243 @@ export interface Every1FollowStats {
   following: number;
 }
 
+export interface Every1PublicProfileStats {
+  creatorCoinAddress: null | string;
+  creatorCoinTicker: null | string;
+  profileId: null | string;
+  referralCoinRewards: number;
+}
+
+export interface Every1CollaborationEarningsSummary {
+  allocationCount: number;
+  collaborationCount: number;
+  lastEarnedAt: null | string;
+  latestAmount: number;
+  latestCoinSymbol: null | string;
+}
+
+export interface Every1CollaborationEarningsItem {
+  allocationCount: number;
+  coinAddress: null | string;
+  coinSymbol: string;
+  collaborationId: string;
+  lastEarnedAt: null | string;
+  ticker: string;
+  title: string;
+  totalAmount: number;
+}
+
+export interface Every1CollaborationRuntimeConfig {
+  enabled: boolean;
+  payoutEnabled: boolean;
+  payoutWalletAddress: null | string;
+}
+
+export type Every1CollaborationPayoutStatus = "failed" | "paid" | "recorded";
+
+export interface Every1CollaborationPayoutItem {
+  allocationId: string;
+  amount: number;
+  coinAddress: string;
+  coinSymbol: string;
+  collaborationId: string;
+  createdAt: string;
+  errorMessage: null | string;
+  payoutAttemptedAt: null | string;
+  recipientWalletAddress: null | string;
+  sentAt: null | string;
+  splitPercent: number;
+  status: Every1CollaborationPayoutStatus;
+  ticker: string;
+  title: string;
+  txHash: null | string;
+}
+
+export interface Every1CollaborationSettlementItem {
+  coinAddress: string;
+  coinSymbol: string;
+  collaborationId: string;
+  collaborationStatus: string;
+  failedAmount: number;
+  failedCount: number;
+  grossAmount: number;
+  lastActivityAt: null | string;
+  launchStatus: string;
+  paidAmount: number;
+  paidCount: number;
+  payoutsPaused: boolean;
+  payoutsPausedAt: null | string;
+  payoutsPausedReason: null | string;
+  queuedAmount: number;
+  queuedCount: number;
+  rewardTokenDecimals: number;
+  sourceTypes: string[];
+  ticker: string;
+  title: string;
+  totalCount: number;
+  viewerSplitPercent: number;
+}
+
+export interface Every1CollaborationPayoutAuditItem {
+  allocationId: string;
+  amount: number;
+  coinAddress: string;
+  coinSymbol: string;
+  collaborationId: string;
+  createdAt: string;
+  errorMessage: null | string;
+  payoutAttemptedAt: null | string;
+  recipientName: null | string;
+  recipientProfileId: string;
+  recipientUsername: null | string;
+  recipientWalletAddress: null | string;
+  sentAt: null | string;
+  sourceType: string;
+  splitPercent: number;
+  status: Every1CollaborationPayoutStatus;
+  ticker: string;
+  title: string;
+  txHash: null | string;
+}
+
+export interface Every1WalletRewardToken {
+  lastReceivedAt: null | string;
+  rewardCount: number;
+  tokenAddress: string;
+  tokenDecimals: number;
+  tokenSymbol: string;
+}
+
+export interface Every1WalletActivityItem {
+  activityId: string;
+  activityKind: "collaboration_payout" | "fandrop_reward";
+  amount: number;
+  createdAt: string;
+  sourceName: string;
+  status: string;
+  targetKey: null | string;
+  tokenAddress: string;
+  tokenSymbol: string;
+  txHash: null | string;
+}
+
+export type Every1CollaborationStatus =
+  | "active"
+  | "archived"
+  | "closed"
+  | "draft"
+  | "open"
+  | "paused";
+
+export type Every1CollaborationMemberRole =
+  | "contributor"
+  | "editor"
+  | "owner"
+  | "viewer";
+
+export type Every1CollaborationMemberStatus =
+  | "active"
+  | "declined"
+  | "invited"
+  | "left"
+  | "removed"
+  | "requested";
+
+export interface Every1CollaborationMember {
+  acceptedAt: null | string;
+  avatarUrl: null | string;
+  displayName: null | string;
+  inviteExpiresAt: null | string;
+  joinedAt: null | string;
+  note: null | string;
+  profileId: string;
+  role: Every1CollaborationMemberRole;
+  splitPercent: number;
+  status: Every1CollaborationMemberStatus;
+  username: null | string;
+}
+
+export interface Every1Collaboration {
+  acceptedAt: null | string;
+  activeMemberCount: number;
+  collaborationId: string;
+  coinAddress: null | string;
+  coverImageUrl: null | string;
+  createdAt: string;
+  description: null | string;
+  inviteExpiresAt: null | string;
+  isExpired: boolean;
+  launchId: null | string;
+  metadataUri: null | string;
+  launchStatus:
+    | "archived"
+    | "draft"
+    | "failed"
+    | "launched"
+    | "launching"
+    | "queued"
+    | "ready";
+  members: Every1CollaborationMember[];
+  ownerAvatarUrl: null | string;
+  ownerDisplayName: null | string;
+  ownerId: string;
+  ownerUsername: null | string;
+  pendingMemberCount: number;
+  splitLockedAt: null | string;
+  status: Every1CollaborationStatus;
+  ticker: string;
+  title: string;
+  viewerCanCancel: boolean;
+  viewerCanLaunch: boolean;
+  viewerCanRespond: boolean;
+  viewerRole: Every1CollaborationMemberRole | null;
+  viewerStatus: Every1CollaborationMemberStatus | null;
+}
+
+export interface Every1CollaborationInviteInput {
+  collaboratorProfileId: string;
+  collaboratorUsername: string;
+  coverImageUrl?: null | string;
+  creatorSplit: number;
+  description?: null | string;
+  inviteNote?: null | string;
+  metadataUri?: null | string;
+  name: string;
+  supply?: number;
+  ticker: string;
+}
+
+export interface Every1CollaborationInviteResult {
+  collaborationId: string;
+  collaboratorDisplayName: null | string;
+  launchId: string;
+  notificationId: null | string;
+  status: Every1CollaborationStatus;
+  ticker: string;
+  title: string;
+}
+
+export interface Every1CollaborationResponseResult {
+  collaborationId: string;
+  decision: "accept" | "decline";
+  notificationId: null | string;
+  status: Every1CollaborationStatus;
+}
+
+export interface Every1CollaborationCancelResult {
+  collaborationId: string;
+  notificationId: null | string;
+  status: Every1CollaborationStatus;
+}
+
+export interface Every1CollaborationLaunchResult {
+  coinAddress: string;
+  collaborationId: string;
+  launchId: string;
+  notificationId: null | string;
+  status: Every1CollaborationStatus;
+}
+
 export interface Every1FollowRelationship {
   isFollowedByMe: boolean;
   isFollowingMe: boolean;
@@ -523,6 +760,13 @@ export interface Every1FanDropParticipation {
   joinedAt: string;
 }
 
+export type Every1FanDropSettlementStatus =
+  | "failed"
+  | "funded"
+  | "pending_funding"
+  | "settled"
+  | "settling";
+
 export interface Every1FanDropTask {
   currentValue: number;
   id: string;
@@ -542,6 +786,8 @@ export interface Every1FanDropCampaign {
   creatorProfileId: null | string;
   ctaLabel: string;
   endsAt: null | string;
+  fundedAt: null | string;
+  fundingTxHash: null | string;
   id: string;
   isJoined: boolean;
   missionId: string;
@@ -551,7 +797,14 @@ export interface Every1FanDropCampaign {
   rank: null | number;
   rankLabel: string;
   rewardE1xp: number;
+  rewardFailedCount: number;
+  rewardPoolAmount: null | number | string;
   rewardPoolLabel: null | string;
+  rewardSentCount: number;
+  rewardTokenAddress: null | string;
+  rewardTokenDecimals: null | number;
+  rewardTokenSymbol: null | string;
+  settlementStatus: null | Every1FanDropSettlementStatus;
   slug: string;
   startsAt: null | string;
   status: "active" | "archived" | "completed" | "draft" | "paused";
@@ -560,6 +813,7 @@ export interface Every1FanDropCampaign {
   tasks: Every1FanDropTask[];
   timeLabel: string;
   title: string;
+  winnerLimit: null | number;
 }
 
 export interface Every1FanDropUpsertInput {
@@ -572,20 +826,36 @@ export interface Every1FanDropUpsertInput {
   missionId?: null | string;
   referralTarget?: number;
   rewardE1xp?: number;
+  rewardPoolAmount?: null | number;
   rewardPoolLabel?: null | string;
+  rewardTokenAddress?: null | string;
+  rewardTokenDecimals?: number;
+  rewardTokenSymbol?: null | string;
   startsAt?: null | string;
   status?: "active" | "archived" | "completed" | "draft" | "paused";
   subtitle?: null | string;
   title: string;
+  winnerLimit?: null | number;
 }
 
 export interface Every1FanDropUpsertResult {
   created?: boolean;
   creatorProfileId?: null | string;
   id?: null | string;
+  rewardPoolAmount?: null | number | string;
+  rewardPoolConfigured?: boolean;
+  rewardTokenAddress?: null | string;
+  rewardTokenSymbol?: null | string;
+  settlementStatus?: null | Every1FanDropSettlementStatus;
   slug?: null | string;
   status?: null | string;
   title?: null | string;
+}
+
+export interface Every1FanDropRuntimeConfig {
+  enabled: boolean;
+  payoutWalletAddress: null | string;
+  settlementEnabled: boolean;
 }
 
 export interface ReferralDashboard {

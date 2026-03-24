@@ -140,7 +140,7 @@ const FanDropDetail = () => {
         {
           description: result.alreadyJoined
             ? "Finish the remaining actions before the reward pool closes."
-            : `${displayCampaign.rewardPoolLabel} is live now.`
+            : `${displayCampaign.rewardPoolLabel} is live now and auto-sends after close.`
         }
       );
     } catch (error) {
@@ -417,7 +417,8 @@ const FanDropDetail = () => {
                   Reward note
                 </p>
                 <p className="mt-2 font-semibold text-gray-950 dark:text-gray-50">
-                  Reward distribution settles after the FanDrop window closes.
+                  Rewards auto-send to winner wallets after the FanDrop window
+                  closes.
                 </p>
               </div>
             </div>

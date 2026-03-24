@@ -8,6 +8,19 @@ import type {
   Every1ActivePopupCampaign,
   Every1CoinChatMessage,
   Every1CoinChatMutationResult,
+  Every1Collaboration,
+  Every1CollaborationCancelResult,
+  Every1CollaborationEarningsItem,
+  Every1CollaborationEarningsSummary,
+  Every1CollaborationInviteInput,
+  Every1CollaborationInviteResult,
+  Every1CollaborationLaunchResult,
+  Every1CollaborationMember,
+  Every1CollaborationPayoutAuditItem,
+  Every1CollaborationPayoutItem,
+  Every1CollaborationResponseResult,
+  Every1CollaborationRuntimeConfig,
+  Every1CollaborationSettlementItem,
   Every1CommunityDetails,
   Every1CommunityMember,
   Every1CommunityMutationResult,
@@ -24,6 +37,7 @@ import type {
   Every1FanDropJoinResult,
   Every1FanDropNotificationSyncResult,
   Every1FanDropParticipation,
+  Every1FanDropRuntimeConfig,
   Every1FanDropUpsertInput,
   Every1FanDropUpsertResult,
   Every1FollowListProfile,
@@ -38,7 +52,10 @@ import type {
   Every1Profile,
   Every1ProfileSocialAccount,
   Every1ProfileVerificationRequest,
+  Every1PublicProfileStats,
   Every1VerificationProofResult,
+  Every1WalletActivityItem,
+  Every1WalletRewardToken,
   MissionClaimResult,
   ReferralDashboard,
   ReferralJoinResult,
@@ -61,6 +78,22 @@ export const EVERY1_PROFILE_SOCIAL_ACCOUNTS_QUERY_KEY =
   "every1-profile-social-accounts";
 export const EVERY1_PROFILE_VERIFICATION_REQUESTS_QUERY_KEY =
   "every1-profile-verification-requests";
+export const EVERY1_PUBLIC_PROFILE_STATS_QUERY_KEY =
+  "every1-public-profile-stats";
+export const EVERY1_COLLABORATIONS_QUERY_KEY = "every1-collaborations";
+export const EVERY1_COLLABORATION_EARNINGS_SUMMARY_QUERY_KEY =
+  "every1-collaboration-earnings-summary";
+export const EVERY1_COLLABORATION_EARNINGS_QUERY_KEY =
+  "every1-collaboration-earnings";
+export const EVERY1_COLLABORATION_PAYOUTS_QUERY_KEY =
+  "every1-collaboration-payouts";
+export const EVERY1_COLLABORATION_SETTLEMENTS_QUERY_KEY =
+  "every1-collaboration-settlements";
+export const EVERY1_COLLABORATION_PAYOUT_AUDIT_QUERY_KEY =
+  "every1-collaboration-payout-audit";
+export const EVERY1_WALLET_ACTIVITY_QUERY_KEY = "every1-wallet-activity";
+export const EVERY1_WALLET_REWARD_TOKENS_QUERY_KEY =
+  "every1-wallet-reward-tokens";
 export const EVERY1_FOLLOW_STATS_QUERY_KEY = "every1-follow-stats";
 export const EVERY1_FOLLOW_RELATIONSHIP_QUERY_KEY =
   "every1-follow-relationship";
@@ -228,6 +261,162 @@ type PopupCampaignRow = {
   priority: number;
   title: string;
   triggered_at: null | string;
+};
+
+type PublicProfileStatsRow = {
+  creator_coin_address: null | string;
+  creator_coin_ticker: null | string;
+  profile_id: null | string;
+  referral_coin_rewards: null | number | string;
+};
+
+type CollaborationMemberRow = {
+  acceptedAt: null | string;
+  avatarUrl: null | string;
+  displayName: null | string;
+  inviteExpiresAt: null | string;
+  joinedAt: null | string;
+  note: null | string;
+  profileId: string;
+  role: Every1CollaborationMember["role"];
+  splitPercent: null | number | string;
+  status: Every1CollaborationMember["status"];
+  username: null | string;
+};
+
+type CollaborationRow = {
+  accepted_at: null | string;
+  active_member_count: number;
+  collaboration_id: string;
+  coin_address: null | string;
+  cover_image_url: null | string;
+  created_at: string;
+  description: null | string;
+  invite_expires_at: null | string;
+  is_expired: boolean;
+  launch_id: null | string;
+  launch_status: Every1Collaboration["launchStatus"];
+  metadata_uri: null | string;
+  members: CollaborationMemberRow[] | null;
+  owner_avatar_url: null | string;
+  owner_display_name: null | string;
+  owner_id: string;
+  owner_username: null | string;
+  pending_member_count: number;
+  split_locked_at: null | string;
+  status: Every1Collaboration["status"];
+  ticker: string;
+  title: string;
+  viewer_can_cancel: boolean;
+  viewer_can_launch: boolean;
+  viewer_can_respond: boolean;
+  viewer_role: Every1Collaboration["viewerRole"];
+  viewer_status: Every1Collaboration["viewerStatus"];
+};
+
+type CollaborationEarningsSummaryRow = {
+  allocation_count: number | string;
+  collaboration_count: number | string;
+  last_earned_at: null | string;
+  latest_amount: null | number | string;
+  latest_coin_symbol: null | string;
+};
+
+type CollaborationEarningsRow = {
+  allocation_count: number | string;
+  coin_address: null | string;
+  coin_symbol: null | string;
+  collaboration_id: string;
+  last_earned_at: null | string;
+  ticker: string;
+  title: string;
+  total_amount: null | number | string;
+};
+
+type CollaborationPayoutRow = {
+  allocation_id: string;
+  amount: null | number | string;
+  coin_address: string;
+  coin_symbol: string;
+  collaboration_id: string;
+  created_at: string;
+  error_message: null | string;
+  payout_attempted_at: null | string;
+  recipient_wallet_address: null | string;
+  sent_at: null | string;
+  split_percent: null | number | string;
+  status: Every1CollaborationPayoutItem["status"];
+  ticker: string;
+  title: string;
+  tx_hash: null | string;
+};
+
+type CollaborationSettlementRow = {
+  coin_address: string;
+  coin_symbol: string;
+  collaboration_id: string;
+  collaboration_status: string;
+  failed_amount: null | number | string;
+  failed_count: null | number | string;
+  gross_amount: null | number | string;
+  last_activity_at: null | string;
+  launch_status: string;
+  paid_amount: null | number | string;
+  paid_count: null | number | string;
+  payouts_paused: boolean;
+  payouts_paused_at: null | string;
+  payouts_paused_reason: null | string;
+  queued_amount: null | number | string;
+  queued_count: null | number | string;
+  reward_token_decimals: null | number | string;
+  source_types: null | string[];
+  ticker: string;
+  title: string;
+  total_count: null | number | string;
+  viewer_split_percent: null | number | string;
+};
+
+type CollaborationPayoutAuditRow = {
+  allocation_id: string;
+  amount: null | number | string;
+  coin_address: string;
+  coin_symbol: string;
+  collaboration_id: string;
+  created_at: string;
+  error_message: null | string;
+  payout_attempted_at: null | string;
+  recipient_name: null | string;
+  recipient_profile_id: string;
+  recipient_username: null | string;
+  recipient_wallet_address: null | string;
+  sent_at: null | string;
+  source_type: string;
+  split_percent: null | number | string;
+  status: Every1CollaborationPayoutItem["status"];
+  ticker: string;
+  title: string;
+  tx_hash: null | string;
+};
+
+type WalletRewardTokenRow = {
+  last_received_at: null | string;
+  reward_count: number | string;
+  token_address: string;
+  token_decimals: number | string;
+  token_symbol: string;
+};
+
+type WalletActivityRow = {
+  activity_id: string;
+  activity_kind: Every1WalletActivityItem["activityKind"];
+  amount: null | number | string;
+  created_at: string;
+  source_name: string;
+  status: string;
+  target_key: null | string;
+  token_address: string;
+  token_symbol: string;
+  tx_hash: null | string;
 };
 
 const callRpc = async <TData>(
@@ -678,11 +867,16 @@ export const upsertProfileFanDropCampaign = async (
     input_profile_id: profileId,
     input_referral_target: input.referralTarget ?? 2,
     input_reward_e1xp: input.rewardE1xp ?? 0,
+    input_reward_pool_amount: input.rewardPoolAmount ?? null,
     input_reward_pool_label: input.rewardPoolLabel || null,
+    input_reward_token_address: input.rewardTokenAddress || null,
+    input_reward_token_decimals: input.rewardTokenDecimals ?? 18,
+    input_reward_token_symbol: input.rewardTokenSymbol || null,
     input_starts_at: input.startsAt || null,
     input_status: input.status || "draft",
     input_subtitle: input.subtitle || null,
-    input_title: input.title
+    input_title: input.title,
+    input_winner_limit: input.winnerLimit ?? null
   });
 
 export const claimMissionReward = async (
@@ -733,6 +927,25 @@ export const listProfileFanDropParticipation = async (profileId: string) => {
     joinedAt: row.joined_at
   })) satisfies Every1FanDropParticipation[];
 };
+
+export const getFanDropRuntimeConfig = async () =>
+  fetchJson<Every1FanDropRuntimeConfig>("/api/fandrop/config");
+
+export const getCollaborationRuntimeConfig = async () =>
+  fetchJson<Every1CollaborationRuntimeConfig>("/api/collaboration/config");
+
+export const verifyFanDropRewardFunding = async (
+  missionId: string,
+  txHash: string
+) =>
+  fetchJson<{
+    alreadyFunded?: boolean;
+    funded: boolean;
+    fundedAt?: string;
+  }>("/api/fandrop/fund/verify", {
+    body: JSON.stringify({ missionId, txHash }),
+    method: "POST"
+  });
 
 export const listProfileNotifications = async (
   profileId: string,
@@ -901,6 +1114,333 @@ export const getPublicEvery1Profile = async ({
 
   return mapProfileRow(row, { e1xpTotal });
 };
+
+export const getPublicProfileStats = async (input: {
+  profileId?: null | string;
+  walletAddress?: null | string;
+  username?: null | string;
+}) => {
+  const rows = await callRpc<PublicProfileStatsRow[]>(
+    "get_public_profile_stats",
+    {
+      input_profile_id: input.profileId || null,
+      input_username: normalizeHandle(input.username),
+      input_wallet_address: normalizeWalletAddress(input.walletAddress)
+    }
+  );
+
+  const row = rows?.[0];
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    creatorCoinAddress: row.creator_coin_address,
+    creatorCoinTicker: row.creator_coin_ticker,
+    profileId: row.profile_id,
+    referralCoinRewards: toNumber(row.referral_coin_rewards)
+  } satisfies Every1PublicProfileStats;
+};
+
+export const listProfileCollaborations = async (
+  profileId: string,
+  options: { includePrivate?: boolean } = {}
+) => {
+  const rows = await callRpc<CollaborationRow[]>(
+    "list_profile_collaborations",
+    {
+      input_include_private: options.includePrivate ?? false,
+      input_profile_id: profileId
+    }
+  );
+
+  return (rows || []).map((row) => ({
+    acceptedAt: row.accepted_at,
+    activeMemberCount: row.active_member_count,
+    coinAddress: row.coin_address,
+    collaborationId: row.collaboration_id,
+    coverImageUrl: row.cover_image_url,
+    createdAt: row.created_at,
+    description: row.description,
+    inviteExpiresAt: row.invite_expires_at,
+    isExpired: row.is_expired,
+    launchId: row.launch_id,
+    launchStatus: row.launch_status,
+    members: (row.members || []).map((member) => ({
+      acceptedAt: member.acceptedAt,
+      avatarUrl: member.avatarUrl,
+      displayName: member.displayName,
+      inviteExpiresAt: member.inviteExpiresAt,
+      joinedAt: member.joinedAt,
+      note: member.note,
+      profileId: member.profileId,
+      role: member.role,
+      splitPercent: toNumber(member.splitPercent),
+      status: member.status,
+      username: member.username
+    })),
+    metadataUri: row.metadata_uri,
+    ownerAvatarUrl: row.owner_avatar_url,
+    ownerDisplayName: row.owner_display_name,
+    ownerId: row.owner_id,
+    ownerUsername: row.owner_username,
+    pendingMemberCount: row.pending_member_count,
+    splitLockedAt: row.split_locked_at,
+    status: row.status,
+    ticker: row.ticker,
+    title: row.title,
+    viewerCanCancel: row.viewer_can_cancel,
+    viewerCanLaunch: row.viewer_can_launch,
+    viewerCanRespond: row.viewer_can_respond,
+    viewerRole: row.viewer_role,
+    viewerStatus: row.viewer_status
+  })) satisfies Every1Collaboration[];
+};
+
+export const getProfileCollaborationEarningsSummary = async (
+  profileId: string
+) => {
+  const rows = await callRpc<CollaborationEarningsSummaryRow[]>(
+    "get_profile_collaboration_earnings_summary",
+    {
+      input_profile_id: profileId
+    }
+  );
+
+  const row = rows?.[0];
+
+  if (!row) {
+    return {
+      allocationCount: 0,
+      collaborationCount: 0,
+      lastEarnedAt: null,
+      latestAmount: 0,
+      latestCoinSymbol: null
+    } satisfies Every1CollaborationEarningsSummary;
+  }
+
+  return {
+    allocationCount: toNumber(row.allocation_count),
+    collaborationCount: toNumber(row.collaboration_count),
+    lastEarnedAt: row.last_earned_at,
+    latestAmount: toNumber(row.latest_amount),
+    latestCoinSymbol: row.latest_coin_symbol
+  } satisfies Every1CollaborationEarningsSummary;
+};
+
+export const listProfileCollaborationEarnings = async (profileId: string) => {
+  const rows = await callRpc<CollaborationEarningsRow[]>(
+    "list_profile_collaboration_earnings",
+    {
+      input_profile_id: profileId
+    }
+  );
+
+  return (rows || []).map((row) => ({
+    allocationCount: toNumber(row.allocation_count),
+    coinAddress: row.coin_address,
+    coinSymbol: row.coin_symbol || "COIN",
+    collaborationId: row.collaboration_id,
+    lastEarnedAt: row.last_earned_at,
+    ticker: row.ticker,
+    title: row.title,
+    totalAmount: toNumber(row.total_amount)
+  })) satisfies Every1CollaborationEarningsItem[];
+};
+
+export const listProfileCollaborationPayouts = async (profileId: string) => {
+  const rows = await callRpc<CollaborationPayoutRow[]>(
+    "list_profile_collaboration_payouts",
+    {
+      input_profile_id: profileId
+    }
+  );
+
+  return (rows || []).map((row) => ({
+    allocationId: row.allocation_id,
+    amount: toNumber(row.amount),
+    coinAddress: row.coin_address,
+    coinSymbol: row.coin_symbol,
+    collaborationId: row.collaboration_id,
+    createdAt: row.created_at,
+    errorMessage: row.error_message,
+    payoutAttemptedAt: row.payout_attempted_at,
+    recipientWalletAddress: row.recipient_wallet_address,
+    sentAt: row.sent_at,
+    splitPercent: toNumber(row.split_percent),
+    status: row.status,
+    ticker: row.ticker,
+    title: row.title,
+    txHash: row.tx_hash
+  })) satisfies Every1CollaborationPayoutItem[];
+};
+
+export const listProfileCollaborationSettlements = async (
+  profileId: string
+) => {
+  const rows = await callRpc<CollaborationSettlementRow[]>(
+    "list_profile_collaboration_settlements",
+    {
+      input_profile_id: profileId
+    }
+  );
+
+  return (rows || []).map((row) => ({
+    coinAddress: row.coin_address,
+    coinSymbol: row.coin_symbol,
+    collaborationId: row.collaboration_id,
+    collaborationStatus: row.collaboration_status,
+    failedAmount: toNumber(row.failed_amount),
+    failedCount: toNumber(row.failed_count),
+    grossAmount: toNumber(row.gross_amount),
+    lastActivityAt: row.last_activity_at,
+    launchStatus: row.launch_status,
+    paidAmount: toNumber(row.paid_amount),
+    paidCount: toNumber(row.paid_count),
+    payoutsPaused: row.payouts_paused,
+    payoutsPausedAt: row.payouts_paused_at,
+    payoutsPausedReason: row.payouts_paused_reason,
+    queuedAmount: toNumber(row.queued_amount),
+    queuedCount: toNumber(row.queued_count),
+    rewardTokenDecimals: toNumber(row.reward_token_decimals || 18),
+    sourceTypes: row.source_types || [],
+    ticker: row.ticker,
+    title: row.title,
+    totalCount: toNumber(row.total_count),
+    viewerSplitPercent: toNumber(row.viewer_split_percent)
+  })) satisfies Every1CollaborationSettlementItem[];
+};
+
+export const listProfileCollaborationPayoutAudit = async (
+  profileId: string,
+  collaborationId?: null | string
+) => {
+  const rows = await callRpc<CollaborationPayoutAuditRow[]>(
+    "list_profile_collaboration_payout_audit",
+    {
+      input_collaboration_id: collaborationId || null,
+      input_profile_id: profileId
+    }
+  );
+
+  return (rows || []).map((row) => ({
+    allocationId: row.allocation_id,
+    amount: toNumber(row.amount),
+    coinAddress: row.coin_address,
+    coinSymbol: row.coin_symbol,
+    collaborationId: row.collaboration_id,
+    createdAt: row.created_at,
+    errorMessage: row.error_message,
+    payoutAttemptedAt: row.payout_attempted_at,
+    recipientName: row.recipient_name,
+    recipientProfileId: row.recipient_profile_id,
+    recipientUsername: row.recipient_username,
+    recipientWalletAddress: row.recipient_wallet_address,
+    sentAt: row.sent_at,
+    sourceType: row.source_type,
+    splitPercent: toNumber(row.split_percent),
+    status: row.status,
+    ticker: row.ticker,
+    title: row.title,
+    txHash: row.tx_hash
+  })) satisfies Every1CollaborationPayoutAuditItem[];
+};
+
+export const listProfileRewardTokens = async (profileId: string) => {
+  const rows = await callRpc<WalletRewardTokenRow[]>(
+    "list_profile_reward_tokens",
+    {
+      input_profile_id: profileId
+    }
+  );
+
+  return (rows || []).map((row) => ({
+    lastReceivedAt: row.last_received_at,
+    rewardCount: toNumber(row.reward_count),
+    tokenAddress: row.token_address,
+    tokenDecimals: toNumber(row.token_decimals),
+    tokenSymbol: row.token_symbol
+  })) satisfies Every1WalletRewardToken[];
+};
+
+export const listProfileWalletActivity = async (profileId: string) => {
+  const rows = await callRpc<WalletActivityRow[]>(
+    "list_profile_wallet_activity",
+    {
+      input_profile_id: profileId
+    }
+  );
+
+  return (rows || []).map((row) => ({
+    activityId: row.activity_id,
+    activityKind: row.activity_kind,
+    amount: toNumber(row.amount),
+    createdAt: row.created_at,
+    sourceName: row.source_name,
+    status: row.status,
+    targetKey: row.target_key,
+    tokenAddress: row.token_address,
+    tokenSymbol: row.token_symbol,
+    txHash: row.tx_hash
+  })) satisfies Every1WalletActivityItem[];
+};
+
+export const createCollaborationCoinInvite = async (
+  ownerProfileId: string,
+  input: Every1CollaborationInviteInput
+) =>
+  callRpc<Every1CollaborationInviteResult>("create_collaboration_coin_invite", {
+    input_chain_id: 8453,
+    input_collaborator_profile_id: input.collaboratorProfileId,
+    input_collaborator_split: toNumber(100 - input.creatorSplit),
+    input_cover_image_url: input.coverImageUrl || null,
+    input_creator_split: toNumber(input.creatorSplit),
+    input_description: input.description || null,
+    input_invite_note: input.inviteNote || null,
+    input_metadata_uri: input.metadataUri || null,
+    input_name: input.name,
+    input_owner_profile_id: ownerProfileId,
+    input_supply: Math.max(Number(input.supply || 10000000), 1),
+    input_ticker: input.ticker
+  });
+
+export const respondToCollaborationCoinInvite = async (
+  profileId: string,
+  collaborationId: string,
+  decision: "accept" | "decline"
+) =>
+  callRpc<Every1CollaborationResponseResult>(
+    "respond_to_collaboration_coin_invite",
+    {
+      input_collaboration_id: collaborationId,
+      input_decision: decision,
+      input_profile_id: profileId
+    }
+  );
+
+export const cancelCollaborationCoinInvite = async (
+  profileId: string,
+  collaborationId: string
+) =>
+  callRpc<Every1CollaborationCancelResult>("cancel_collaboration_coin_invite", {
+    input_collaboration_id: collaborationId,
+    input_profile_id: profileId
+  });
+
+export const completeCollaborationCoinLaunch = async (
+  profileId: string,
+  collaborationId: string,
+  coinAddress: string
+) =>
+  callRpc<Every1CollaborationLaunchResult>(
+    "complete_collaboration_coin_launch",
+    {
+      input_coin_address: coinAddress,
+      input_collaboration_id: collaborationId,
+      input_profile_id: profileId
+    }
+  );
 
 const scoreProfileSearchResult = (
   row: PublicProfileRow,

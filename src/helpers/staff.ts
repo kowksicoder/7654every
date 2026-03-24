@@ -11,6 +11,9 @@ import type {
   StaffAdminAccountRow,
   StaffAdminSession,
   StaffCoinLaunchRow,
+  StaffCollaborationPayoutRow,
+  StaffCollaborationPayoutSummary,
+  StaffCollaborationSettlementRow,
   StaffCommunityVerificationRequestRow,
   StaffCreatorOfWeekCampaignRow,
   StaffCreatorRow,
@@ -38,6 +41,12 @@ export const STAFF_EARNINGS_QUERY_KEY = "staff-earnings";
 export const STAFF_E1XP_ACTIVITY_QUERY_KEY = "staff-e1xp-activity";
 export const STAFF_MISSIONS_QUERY_KEY = "staff-missions";
 export const STAFF_FANDROPS_QUERY_KEY = "staff-fandrops";
+export const STAFF_COLLABORATION_PAYOUTS_QUERY_KEY =
+  "staff-collaboration-payouts";
+export const STAFF_COLLABORATION_PAYOUT_SUMMARY_QUERY_KEY =
+  "staff-collaboration-payout-summary";
+export const STAFF_COLLABORATION_SETTLEMENTS_QUERY_KEY =
+  "staff-collaboration-settlements";
 export const STAFF_SHOWCASE_QUERY_KEY = "staff-showcase";
 export const STAFF_CREATORS_QUERY_KEY = "staff-creators";
 export const STAFF_VERIFICATION_REQUESTS_QUERY_KEY =
@@ -635,17 +644,27 @@ export const listStaffFanDrops = async () => {
       creator_username: null | string;
       creator_wallet_address: null | string;
       ends_at: null | string;
+      funded_at: null | string;
+      funding_tx_hash: null | string;
       mission_id: string;
       participant_count: number | string;
       referral_target: number | string;
       reward_e1xp: number | string;
+      reward_failed_count: number | string;
+      reward_pool_amount: null | number | string;
       reward_pool_label: null | string;
+      reward_sent_count: number | string;
+      reward_token_address: null | string;
+      reward_token_decimals: null | number | string;
+      reward_token_symbol: null | string;
+      settlement_status: StaffFanDropRow["settlementStatus"];
       slug: string;
       starts_at: null | string;
       status: string;
       subtitle: null | string;
       task_count: number | string;
       title: string;
+      winner_limit: null | number | string;
     }>
   >("list_staff_fandrops");
 
@@ -664,19 +683,230 @@ export const listStaffFanDrops = async () => {
     creatorUsername: row.creator_username,
     creatorWalletAddress: row.creator_wallet_address,
     endsAt: row.ends_at,
+    fundedAt: row.funded_at,
+    fundingTxHash: row.funding_tx_hash,
     missionId: row.mission_id,
     participantCount: toNumber(row.participant_count),
     referralTarget: toNumber(row.referral_target),
     rewardE1xp: toNumber(row.reward_e1xp),
+    rewardFailedCount: toNumber(row.reward_failed_count),
+    rewardPoolAmount:
+      row.reward_pool_amount === null || row.reward_pool_amount === undefined
+        ? null
+        : toNumber(row.reward_pool_amount),
     rewardPoolLabel: row.reward_pool_label,
+    rewardSentCount: toNumber(row.reward_sent_count),
+    rewardTokenAddress: row.reward_token_address,
+    rewardTokenDecimals:
+      row.reward_token_decimals === null ||
+      row.reward_token_decimals === undefined
+        ? null
+        : toNumber(row.reward_token_decimals),
+    rewardTokenSymbol: row.reward_token_symbol,
+    settlementStatus: row.settlement_status,
     slug: row.slug,
     startsAt: row.starts_at,
     status: row.status,
     subtitle: row.subtitle,
     taskCount: toNumber(row.task_count),
-    title: row.title
+    title: row.title,
+    winnerLimit:
+      row.winner_limit === null || row.winner_limit === undefined
+        ? null
+        : toNumber(row.winner_limit)
   })) satisfies StaffFanDropRow[];
 };
+
+export const listStaffCollaborationPayouts = async ({
+  limit = 100,
+  offset = 0,
+  status
+}: {
+  limit?: number;
+  offset?: number;
+  status?: null | StaffCollaborationPayoutRow["status"];
+} = {}) => {
+  const rows = await callStaffRpc<
+    Array<{
+      allocation_id: string;
+      amount: number | string;
+      coin_address: string;
+      coin_symbol: string;
+      collaboration_id: string;
+      created_at: string;
+      error_message: null | string;
+      owner_name: null | string;
+      owner_profile_id: string;
+      owner_username: null | string;
+      payout_attempted_at: null | string;
+      recipient_name: null | string;
+      recipient_profile_id: string;
+      recipient_username: null | string;
+      recipient_wallet_address: null | string;
+      sent_at: null | string;
+      split_percent: number | string;
+      status: StaffCollaborationPayoutRow["status"];
+      ticker: string;
+      title: string;
+      tx_hash: null | string;
+    }>
+  >("list_staff_collaboration_payouts", {
+    input_limit: limit,
+    input_offset: offset,
+    input_status: status || null
+  });
+
+  return rows.map((row) => ({
+    allocationId: row.allocation_id,
+    amount: toNumber(row.amount),
+    coinAddress: row.coin_address,
+    coinSymbol: row.coin_symbol,
+    collaborationId: row.collaboration_id,
+    createdAt: row.created_at,
+    errorMessage: row.error_message,
+    ownerName: row.owner_name,
+    ownerProfileId: row.owner_profile_id,
+    ownerUsername: row.owner_username,
+    payoutAttemptedAt: row.payout_attempted_at,
+    recipientName: row.recipient_name,
+    recipientProfileId: row.recipient_profile_id,
+    recipientUsername: row.recipient_username,
+    recipientWalletAddress: row.recipient_wallet_address,
+    sentAt: row.sent_at,
+    splitPercent: toNumber(row.split_percent),
+    status: row.status,
+    ticker: row.ticker,
+    title: row.title,
+    txHash: row.tx_hash
+  })) satisfies StaffCollaborationPayoutRow[];
+};
+
+export const staffRetryCollaborationPayout = async (allocationId: string) =>
+  callStaffRpc<StaffMutationResult>("staff_retry_collaboration_payout", {
+    input_allocation_id: allocationId
+  });
+
+export const getStaffCollaborationPayoutSummary = async () => {
+  const rows = await callStaffRpc<
+    Array<{
+      active_collaboration_count: number | string;
+      collaboration_count: number | string;
+      failed_amount: number | string;
+      failed_count: number | string;
+      paid_amount: number | string;
+      paid_count: number | string;
+      paused_collaboration_count: number | string;
+      queued_amount: number | string;
+      queued_count: number | string;
+    }>
+  >("get_staff_collaboration_payout_summary");
+
+  const row = rows[0];
+
+  return {
+    activeCollaborationCount: toNumber(row?.active_collaboration_count),
+    collaborationCount: toNumber(row?.collaboration_count),
+    failedAmount: toNumber(row?.failed_amount),
+    failedCount: toNumber(row?.failed_count),
+    paidAmount: toNumber(row?.paid_amount),
+    paidCount: toNumber(row?.paid_count),
+    pausedCollaborationCount: toNumber(row?.paused_collaboration_count),
+    queuedAmount: toNumber(row?.queued_amount),
+    queuedCount: toNumber(row?.queued_count)
+  } satisfies StaffCollaborationPayoutSummary;
+};
+
+export const listStaffCollaborationSettlements = async ({
+  limit = 100,
+  offset = 0
+}: {
+  limit?: number;
+  offset?: number;
+} = {}) => {
+  const rows = await callStaffRpc<
+    Array<{
+      coin_address: string;
+      coin_symbol: string;
+      collaboration_id: string;
+      collaboration_status: string;
+      failed_amount: number | string;
+      failed_count: number | string;
+      gross_amount: number | string;
+      last_activity_at: null | string;
+      launch_status: string;
+      owner_name: null | string;
+      owner_profile_id: string;
+      owner_username: null | string;
+      paid_amount: number | string;
+      paid_count: number | string;
+      payouts_paused: boolean;
+      payouts_paused_at: null | string;
+      payouts_paused_reason: null | string;
+      queued_amount: number | string;
+      queued_count: number | string;
+      reward_token_decimals: number | string;
+      source_types: null | string[];
+      ticker: string;
+      title: string;
+      total_count: number | string;
+    }>
+  >("list_staff_collaboration_settlements", {
+    input_limit: limit,
+    input_offset: offset
+  });
+
+  return rows.map((row) => ({
+    coinAddress: row.coin_address,
+    coinSymbol: row.coin_symbol,
+    collaborationId: row.collaboration_id,
+    collaborationStatus: row.collaboration_status,
+    failedAmount: toNumber(row.failed_amount),
+    failedCount: toNumber(row.failed_count),
+    grossAmount: toNumber(row.gross_amount),
+    lastActivityAt: row.last_activity_at,
+    launchStatus: row.launch_status,
+    ownerName: row.owner_name,
+    ownerProfileId: row.owner_profile_id,
+    ownerUsername: row.owner_username,
+    paidAmount: toNumber(row.paid_amount),
+    paidCount: toNumber(row.paid_count),
+    payoutsPaused: row.payouts_paused,
+    payoutsPausedAt: row.payouts_paused_at,
+    payoutsPausedReason: row.payouts_paused_reason,
+    queuedAmount: toNumber(row.queued_amount),
+    queuedCount: toNumber(row.queued_count),
+    rewardTokenDecimals: toNumber(row.reward_token_decimals || 18),
+    sourceTypes: row.source_types || [],
+    ticker: row.ticker,
+    title: row.title,
+    totalCount: toNumber(row.total_count)
+  })) satisfies StaffCollaborationSettlementRow[];
+};
+
+export const staffRetryFailedCollaborationPayouts = async (
+  collaborationId?: null | string
+) =>
+  callStaffRpc<
+    StaffMutationResult & {
+      retriedCount?: number;
+    }
+  >("staff_retry_failed_collaboration_payouts", {
+    input_collaboration_id: collaborationId || null
+  });
+
+export const staffSetCollaborationPayoutPause = async (input: {
+  collaborationId: string;
+  paused: boolean;
+  reason?: null | string;
+}) =>
+  callStaffRpc<StaffMutationResult & { paused?: boolean }>(
+    "staff_set_collaboration_payout_pause",
+    {
+      input_collaboration_id: input.collaborationId,
+      input_paused: input.paused,
+      input_reason: input.reason || null
+    }
+  );
 
 export const staffUpsertFanDropCampaign = async (input: {
   about?: null | string;
@@ -689,11 +919,16 @@ export const staffUpsertFanDropCampaign = async (input: {
   missionId?: null | string;
   referralTarget?: number;
   rewardE1xp?: number;
+  rewardPoolAmount?: null | number;
   rewardPoolLabel?: null | string;
+  rewardTokenAddress?: null | string;
+  rewardTokenDecimals?: number;
+  rewardTokenSymbol?: null | string;
   startsAt?: null | string;
   status?: "active" | "archived" | "completed" | "draft" | "paused";
   subtitle?: null | string;
   title: string;
+  winnerLimit?: null | number;
 }) =>
   callStaffRpc<StaffMutationResult>("staff_upsert_fandrop_campaign", {
     input_about: input.about || null,
@@ -706,11 +941,16 @@ export const staffUpsertFanDropCampaign = async (input: {
     input_mission_id: input.missionId || null,
     input_referral_target: input.referralTarget ?? 2,
     input_reward_e1xp: input.rewardE1xp ?? 0,
+    input_reward_pool_amount: input.rewardPoolAmount ?? null,
     input_reward_pool_label: input.rewardPoolLabel || null,
+    input_reward_token_address: input.rewardTokenAddress || null,
+    input_reward_token_decimals: input.rewardTokenDecimals ?? 18,
+    input_reward_token_symbol: input.rewardTokenSymbol || null,
     input_starts_at: input.startsAt || null,
     input_status: input.status || "draft",
     input_subtitle: input.subtitle || null,
-    input_title: input.title
+    input_title: input.title,
+    input_winner_limit: input.winnerLimit ?? null
   });
 
 export const listStaffShowcasePosts = async () => {

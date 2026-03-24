@@ -1,9 +1,4 @@
-import {
-  ArrowLeftIcon,
-  BellIcon,
-  ChatBubbleOvalLeftEllipsisIcon,
-  TrophyIcon
-} from "@heroicons/react/24/solid";
+import { ArrowLeftIcon, BellIcon, TrophyIcon } from "@heroicons/react/24/solid";
 import { memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import evLogo from "@/assets/fonts/evlogo.jpg";
@@ -12,6 +7,7 @@ import { DEFAULT_COLLECT_TOKEN, NATIVE_TOKEN_SYMBOL } from "@/data/constants";
 import getAvatar from "@/helpers/getAvatar";
 import nFormatter from "@/helpers/nFormatter";
 import { hasSupabaseConfig } from "@/helpers/supabase";
+import useEnsureIndexerAuth from "@/hooks/useEnsureIndexerAuth";
 import useEvery1MobileNavBadgeCounts from "@/hooks/useEvery1MobileNavBadgeCounts";
 import useEvery1UnreadCount from "@/hooks/useEvery1UnreadCount";
 import useHasNewNotifications from "@/hooks/useHasNewNotifications";
@@ -26,6 +22,7 @@ const MobileHeader = () => {
   const { currentAccount } = useAccountStore();
   const { profile } = useEvery1Store();
   const { setShow: setShowMobileDrawer } = useMobileDrawerModalStore();
+  const { canUseAuthenticatedIndexer } = useEnsureIndexerAuth();
   const isHomePage = pathname === "/";
   const hasNewNotifications = useHasNewNotifications();
   const { leaderboardCount } = useEvery1MobileNavBadgeCounts();
@@ -41,7 +38,7 @@ const MobileHeader = () => {
     : leaderboardCount;
   const { data: balanceData } = useBalancesBulkQuery({
     pollInterval: 5000,
-    skip: !currentAccount?.address,
+    skip: !currentAccount?.address || !canUseAuthenticatedIndexer,
     variables: {
       request: {
         address: currentAccount?.address,
@@ -129,14 +126,6 @@ const MobileHeader = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            aria-label="Support"
-            className="flex size-8 items-center justify-center text-gray-800 transition-colors hover:text-gray-950 dark:text-gray-200 dark:hover:text-white"
-            to="/support"
-          >
-            <ChatBubbleOvalLeftEllipsisIcon className="size-4.5" />
-          </Link>
-
           <Link
             aria-label="Leaderboard"
             className="relative flex size-8 items-center justify-center text-gray-800 transition-colors hover:text-gray-950 dark:text-gray-200 dark:hover:text-white"

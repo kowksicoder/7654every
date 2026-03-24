@@ -4,24 +4,100 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { createCollaborationRuntime } from "./script/collaborationRuntime.mjs";
+import { createFanDropRuntime } from "./script/fandropRuntime.mjs";
 import { createPushRuntime } from "./script/pushRuntime.mjs";
 import { createVerificationRuntime } from "./script/verificationRuntime.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const collaborationRuntime = createCollaborationRuntime({ rootDir: __dirname });
+const fanDropRuntime = createFanDropRuntime({ rootDir: __dirname });
 const pushRuntime = createPushRuntime({ rootDir: __dirname });
 const verificationRuntime = createVerificationRuntime({ rootDir: __dirname });
 
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) {
+            return;
+          }
+
+          if (id.includes("@zoralabs")) {
+            return "zora";
+          }
+
+          if (id.includes("@privy-io")) {
+            return "privy";
+          }
+
+          if (
+            id.includes("/viem/") ||
+            id.includes("/wagmi/") ||
+            id.includes("@walletconnect") ||
+            id.includes("@reown")
+          ) {
+            return "wallet";
+          }
+
+          if (id.includes("@apollo") || id.includes("/graphql/")) {
+            return "apollo";
+          }
+
+          if (id.includes("@tanstack")) {
+            return "tanstack";
+          }
+
+          if (
+            id.includes("@headlessui") ||
+            id.includes("@heroicons") ||
+            id.includes("framer-motion")
+          ) {
+            return "ui";
+          }
+
+          if (
+            id.includes("/react/") ||
+            id.includes("/react-dom/") ||
+            id.includes("scheduler")
+          ) {
+            return "react-vendor";
+          }
+
+          return "vendor";
+        }
+      }
+    }
+  },
   plugins: [
     tsconfigPaths(),
     react(),
     tailwindcss(),
     {
       configureServer(server) {
+        collaborationRuntime.start();
+        fanDropRuntime.start();
         pushRuntime.start();
         verificationRuntime.start();
         server.middlewares.use(async (request, response, next) => {
+          const collaborationHandled =
+            await collaborationRuntime.handleApiRequest(request, response);
+
+          if (collaborationHandled) {
+            return;
+          }
+
+          const fanDropHandled = await fanDropRuntime.handleApiRequest(
+            request,
+            response
+          );
+
+          if (fanDropHandled) {
+            return;
+          }
+
           const handled = await pushRuntime.handleApiRequest(request, response);
 
           if (handled) {

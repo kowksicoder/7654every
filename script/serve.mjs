@@ -4,6 +4,8 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
+import { createCollaborationRuntime } from "./collaborationRuntime.mjs";
+import { createFanDropRuntime } from "./fandropRuntime.mjs";
 import { createPushRuntime } from "./pushRuntime.mjs";
 import { createVerificationRuntime } from "./verificationRuntime.mjs";
 
@@ -12,6 +14,8 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
 const distDir = path.join(rootDir, "dist");
 const indexHtmlPath = path.join(distDir, "index.html");
+const collaborationRuntime = createCollaborationRuntime({ rootDir });
+const fanDropRuntime = createFanDropRuntime({ rootDir });
 const pushRuntime = createPushRuntime({ rootDir });
 const verificationRuntime = createVerificationRuntime({ rootDir });
 
@@ -891,11 +895,22 @@ const serve = async () => {
   const htmlTemplate = await readFile(indexHtmlPath, "utf8");
   const port = Number(process.env.PORT || 4783);
 
+  collaborationRuntime.start();
   pushRuntime.start();
   verificationRuntime.start();
+  fanDropRuntime.start();
 
   const server = http.createServer(async (request, response) => {
     try {
+      const collaborationHandled = await collaborationRuntime.handleApiRequest(
+        request,
+        response
+      );
+
+      if (collaborationHandled) {
+        return;
+      }
+
       const pushHandled = await pushRuntime.handleApiRequest(request, response);
 
       if (pushHandled) {
@@ -908,6 +923,15 @@ const serve = async () => {
       );
 
       if (verificationHandled) {
+        return;
+      }
+
+      const fanDropHandled = await fanDropRuntime.handleApiRequest(
+        request,
+        response
+      );
+
+      if (fanDropHandled) {
         return;
       }
 

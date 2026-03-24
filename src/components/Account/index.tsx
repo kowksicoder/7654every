@@ -5,10 +5,8 @@ import { Navigate, useLocation, useParams } from "react-router";
 import NewPost from "@/components/Composer/NewPost";
 import Custom404 from "@/components/Shared/404";
 import Custom500 from "@/components/Shared/500";
-import Cover from "@/components/Shared/Cover";
 import PageLayout from "@/components/Shared/PageLayout";
 import { EmptyState } from "@/components/Shared/UI";
-import { STATIC_IMAGES_URL } from "@/data/constants";
 import { AccountFeedType } from "@/data/enums";
 import getAccount from "@/helpers//getAccount";
 import getAvatar from "@/helpers//getAvatar";
@@ -29,6 +27,8 @@ import { useAccountLinkStore } from "@/store/non-persisted/navigation/useAccount
 import { useAccountStore } from "@/store/persisted/useAccountStore";
 import { useEvery1Store } from "@/store/persisted/useEvery1Store";
 import AccountFeed from "./AccountFeed";
+import AccountHoldings from "./AccountHoldings";
+import Collaborations from "./Collaborations";
 import DeletedDetails from "./DeletedDetails";
 import Details from "./Details";
 import FanDrops from "./FanDrops";
@@ -41,9 +41,21 @@ const ViewAccount = () => {
     address: string;
     username: string;
   }>();
-  const [feedType, setFeedType] = useState<AccountFeedType>(
-    AccountFeedType.Feed
-  );
+  const initialTab = new URLSearchParams(location.search).get("tab");
+  const [feedType, setFeedType] = useState<AccountFeedType>(() => {
+    switch (initialTab) {
+      case "collaborations":
+        return AccountFeedType.Collaborations;
+      case "fandrops":
+        return AccountFeedType.FanDrops;
+      case "holdings":
+        return AccountFeedType.Collects;
+      case "media":
+        return AccountFeedType.Media;
+      default:
+        return AccountFeedType.Feed;
+    }
+  });
 
   const { currentAccount } = useAccountStore();
   const { profile } = useEvery1Store();
@@ -201,13 +213,6 @@ const ViewAccount = () => {
       type="profile"
       zeroTopMargin
     >
-      <Cover
-        className="h-36 sm:h-44 md:h-52 md:rounded-[1.5rem]"
-        cover={
-          account?.metadata?.coverPicture ||
-          `${STATIC_IMAGES_URL}/patterns/2.svg`
-        }
-      />
       {renderAccountDetails()}
       {isDeleted || isBlockedByMe || hasBlockedMe ? (
         renderEmptyState()
@@ -216,22 +221,35 @@ const ViewAccount = () => {
           <FeedType
             feedType={feedType}
             setFeedType={setFeedType}
+            showCollaborations={Boolean(accountProfileId)}
             showFanDrops={Boolean(accountProfileId)}
           />
           {currentAccount?.address === account?.address &&
-          feedType !== AccountFeedType.FanDrops ? (
+          (feedType === AccountFeedType.Feed ||
+            feedType === AccountFeedType.Media) ? (
             <NewPost />
           ) : null}
           {(feedType === AccountFeedType.Feed ||
-            feedType === AccountFeedType.Replies ||
-            feedType === AccountFeedType.Media ||
-            feedType === AccountFeedType.Collects) && (
+            feedType === AccountFeedType.Media) && (
             <AccountFeed
               address={account.address}
               type={feedType}
               username={accountInfo.username}
             />
           )}
+          {feedType === AccountFeedType.Collects ? (
+            <AccountHoldings
+              address={account.address}
+              username={accountInfo.username}
+            />
+          ) : null}
+          {feedType === AccountFeedType.Collaborations ? (
+            <Collaborations
+              creatorName={accountInfo.name}
+              creatorProfileId={accountProfileId}
+              isCurrentProfile={currentAccount?.address === account?.address}
+            />
+          ) : null}
           {feedType === AccountFeedType.FanDrops ? (
             <FanDrops
               creatorName={accountInfo.name}

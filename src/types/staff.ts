@@ -188,17 +188,96 @@ export interface StaffFanDropRow {
   creatorUsername: null | string;
   creatorWalletAddress: null | string;
   endsAt: null | string;
+  fundedAt: null | string;
+  fundingTxHash: null | string;
   missionId: string;
   participantCount: number;
   referralTarget: number;
   rewardE1xp: number;
+  rewardFailedCount: number;
+  rewardPoolAmount: null | number;
   rewardPoolLabel: null | string;
+  rewardSentCount: number;
+  rewardTokenAddress: null | string;
+  rewardTokenDecimals: null | number;
+  rewardTokenSymbol: null | string;
+  settlementStatus:
+    | null
+    | "failed"
+    | "funded"
+    | "pending_funding"
+    | "settled"
+    | "settling";
   slug: string;
   startsAt: null | string;
   status: string;
   subtitle: null | string;
   taskCount: number;
   title: string;
+  winnerLimit: null | number;
+}
+
+export interface StaffCollaborationPayoutRow {
+  allocationId: string;
+  amount: number;
+  coinAddress: string;
+  coinSymbol: string;
+  collaborationId: string;
+  createdAt: string;
+  errorMessage: null | string;
+  ownerName: null | string;
+  ownerProfileId: string;
+  ownerUsername: null | string;
+  payoutAttemptedAt: null | string;
+  recipientName: null | string;
+  recipientProfileId: string;
+  recipientUsername: null | string;
+  recipientWalletAddress: null | string;
+  sentAt: null | string;
+  splitPercent: number;
+  status: "failed" | "paid" | "recorded";
+  ticker: string;
+  title: string;
+  txHash: null | string;
+}
+
+export interface StaffCollaborationPayoutSummary {
+  activeCollaborationCount: number;
+  pausedCollaborationCount: number;
+  collaborationCount: number;
+  queuedCount: number;
+  queuedAmount: number;
+  paidCount: number;
+  paidAmount: number;
+  failedCount: number;
+  failedAmount: number;
+}
+
+export interface StaffCollaborationSettlementRow {
+  coinAddress: string;
+  coinSymbol: string;
+  collaborationId: string;
+  collaborationStatus: string;
+  failedAmount: number;
+  failedCount: number;
+  grossAmount: number;
+  lastActivityAt: null | string;
+  launchStatus: string;
+  ownerName: null | string;
+  ownerProfileId: string;
+  ownerUsername: null | string;
+  paidAmount: number;
+  paidCount: number;
+  payoutsPaused: boolean;
+  payoutsPausedAt: null | string;
+  payoutsPausedReason: null | string;
+  queuedAmount: number;
+  queuedCount: number;
+  rewardTokenDecimals: number;
+  sourceTypes: string[];
+  ticker: string;
+  title: string;
+  totalCount: number;
 }
 
 export interface StaffCreatorRow {

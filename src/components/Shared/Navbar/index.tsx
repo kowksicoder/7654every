@@ -92,11 +92,6 @@ const navigationItems = {
     solid: <ReferralsSolid className="size-6" />,
     title: "Referrals"
   },
-  "/fandrop": {
-    outline: <MissionsOutline className="size-6" />,
-    solid: <MissionsSolid className="size-6" />,
-    title: "FanDrop"
-  },
   "/staff": {
     outline: <StaffOutline className="size-6" />,
     solid: <StaffSolid className="size-6" />,

@@ -4,6 +4,7 @@ import {
   ArrowUpIcon,
   ChevronRightIcon
 } from "@heroicons/react/24/outline";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import type { Address } from "viem";
@@ -17,10 +18,20 @@ import {
 } from "@/data/constants";
 import { tokens } from "@/data/tokens";
 import cn from "@/helpers/cn";
+import formatRelativeOrAbsolute from "@/helpers/datetime/formatRelativeOrAbsolute";
+import {
+  EVERY1_WALLET_ACTIVITY_QUERY_KEY,
+  EVERY1_WALLET_REWARD_TOKENS_QUERY_KEY,
+  listProfileRewardTokens,
+  listProfileWalletActivity
+} from "@/helpers/every1";
+import formatAddress from "@/helpers/formatAddress";
 import getTokenImage from "@/helpers/getTokenImage";
+import useEnsureIndexerAuth from "@/hooks/useEnsureIndexerAuth";
 import { useBalancesBulkQuery } from "@/indexer/generated";
 import { useFundModalStore } from "@/store/non-persisted/modal/useFundModalStore";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
+import { useEvery1Store } from "@/store/persisted/useEvery1Store";
 import Unwrap from "./Unwrap";
 import Withdraw from "./Withdraw";
 import Wrap from "./Wrap";
@@ -354,21 +365,113 @@ const SectionRow = ({
   );
 };
 
+const ActivityRow = ({
+  amountLabel,
+  caption,
+  href,
+  statusLabel,
+  symbol,
+  timeLabel,
+  title,
+  txHash
+}: {
+  amountLabel: string;
+  caption: string;
+  href?: null | string;
+  statusLabel: string;
+  symbol: string;
+  timeLabel: string;
+  title: string;
+  txHash?: null | string;
+}) => {
+  const content = (
+    <div className="flex items-center justify-between gap-3 py-2.5">
+      <div className="flex min-w-0 items-center gap-3">
+        <Image
+          alt={symbol}
+          className="size-9 rounded-full object-cover"
+          src={getTokenImage(symbol)}
+        />
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate font-semibold text-gray-950 text-sm dark:text-white">
+              {title}
+            </p>
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500 uppercase tracking-[0.14em] dark:bg-white/8 dark:text-gray-400">
+              {statusLabel}
+            </span>
+          </div>
+          <p className="mt-0.5 truncate text-gray-500 text-xs dark:text-gray-400">
+            {caption}
+          </p>
+          <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-500">
+            {timeLabel}
+            {txHash ? ` | ${formatAddress(txHash, 6)}` : ""}
+          </p>
+        </div>
+      </div>
+
+      <p className="shrink-0 font-semibold text-gray-950 text-sm dark:text-white">
+        {amountLabel}
+      </p>
+    </div>
+  );
+
+  if (href) {
+    return (
+      <Link
+        className="block rounded-2xl px-1 transition hover:bg-gray-50 dark:hover:bg-white/[0.04]"
+        to={href}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className="rounded-2xl px-1">{content}</div>;
+};
+
 const Balances = () => {
   const { currentAccount } = useAccountStore();
+  const { profile } = useEvery1Store();
+  const {
+    authenticating,
+    canUseAuthenticatedIndexer,
+    needsAuthenticatedIndexer
+  } = useEnsureIndexerAuth();
   const { setShowFundModal } = useFundModalStore();
   const [activeTab, setActiveTab] = useState<FundsTab>("coins");
   const [selectedAsset, setSelectedAsset] = useState<FundsAsset | null>(null);
   const [selectedDepositAmount, setSelectedDepositAmount] = useState(10);
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const rewardTokensQuery = useQuery({
+    enabled: Boolean(profile?.id),
+    queryFn: async () => await listProfileRewardTokens(profile?.id || ""),
+    queryKey: [EVERY1_WALLET_REWARD_TOKENS_QUERY_KEY, profile?.id || null]
+  });
+  const walletActivityQuery = useQuery({
+    enabled: Boolean(profile?.id),
+    queryFn: async () => await listProfileWalletActivity(profile?.id || ""),
+    queryKey: [EVERY1_WALLET_ACTIVITY_QUERY_KEY, profile?.id || null]
+  });
+  const tokenContracts = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...tokens.map((token) => token.contractAddress),
+          ...(rewardTokensQuery.data?.map((token) => token.tokenAddress) || [])
+        ])
+      ),
+    [rewardTokensQuery.data]
+  );
   const { data, loading, error, refetch } = useBalancesBulkQuery({
     pollInterval: 5000,
-    skip: !currentAccount?.address,
+    skip: !currentAccount?.address || !canUseAuthenticatedIndexer,
     variables: {
       request: {
         address: currentAccount?.address,
         includeNative: true,
-        tokens: tokens.map((token) => token.contractAddress)
+        tokens: tokenContracts
       }
     }
   });
@@ -415,6 +518,7 @@ const Balances = () => {
     [assets]
   );
   const preferredActionAsset = assets.find((asset) => asset.amount > 0) ?? null;
+  const walletActivity = walletActivityQuery.data || [];
 
   const openFundModal = (amount?: number) => {
     setShowFundModal({
@@ -427,6 +531,25 @@ const Balances = () => {
     return (
       <div className="overflow-hidden border border-gray-200/65 bg-white text-gray-900 md:rounded-[2rem] dark:border-gray-800/75 dark:bg-black dark:text-white">
         <Loader className="my-16" />
+      </div>
+    );
+  }
+
+  if (needsAuthenticatedIndexer) {
+    return (
+      <div className="overflow-hidden border border-gray-200/65 bg-white text-gray-900 md:rounded-[2rem] dark:border-gray-800/75 dark:bg-black dark:text-white">
+        {authenticating ? (
+          <Loader className="my-16" />
+        ) : (
+          <ErrorMessage
+            className="m-5"
+            error={{
+              message:
+                "Sign in again to finish wallet authentication and load your balances."
+            }}
+            title="Authentication required"
+          />
+        )}
       </div>
     );
   }
@@ -573,9 +696,58 @@ const Balances = () => {
             <div className="mt-4 rounded-[1.2rem] bg-gray-50 p-3.5 md:mt-5 md:rounded-[1.5rem] md:p-4 dark:bg-[#17181d]">
               <p className="font-semibold text-lg md:text-2xl">Activity</p>
               <p className="mt-1 text-gray-500 text-xs md:mt-1.5 md:text-sm dark:text-gray-400">
-                Deposits, sends, swaps, wraps, and cash outs will appear here as
-                soon as they land.
+                Reward sends and payout history land here once tokens hit your
+                wallet.
               </p>
+
+              {walletActivityQuery.isLoading ? (
+                <Loader className="my-10" />
+              ) : walletActivityQuery.error ? (
+                <ErrorMessage
+                  className="mt-4"
+                  error={walletActivityQuery.error as { message?: string }}
+                  title="Failed to load wallet activity"
+                />
+              ) : walletActivity.length ? (
+                <div className="mt-4 divide-y divide-gray-200 dark:divide-white/10">
+                  {walletActivity.map((activity) => {
+                    const title =
+                      activity.activityKind === "collaboration_payout"
+                        ? "Collaboration payout"
+                        : "FanDrop reward";
+                    const caption =
+                      activity.activityKind === "collaboration_payout"
+                        ? `From ${activity.sourceName}`
+                        : `${activity.sourceName} auto-sent your reward`;
+
+                    return (
+                      <ActivityRow
+                        amountLabel={formatTokenAmount(
+                          activity.amount,
+                          activity.tokenSymbol
+                        )}
+                        caption={caption}
+                        href={activity.targetKey}
+                        key={activity.activityId}
+                        statusLabel={
+                          activity.activityKind === "collaboration_payout"
+                            ? "Paid"
+                            : "Sent"
+                        }
+                        symbol={activity.tokenSymbol}
+                        timeLabel={formatRelativeOrAbsolute(activity.createdAt)}
+                        title={title}
+                        txHash={activity.txHash}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-4 text-gray-500 text-sm dark:text-gray-400">
+                  FanDrop rewards and collaboration payouts will show up here
+                  after they are sent.
+                </p>
+              )}
             </div>
           ) : null}
         </div>

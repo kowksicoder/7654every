@@ -1,9 +1,14 @@
 import { FireIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
+import type { Address } from "viem";
+import { createPublicClient, erc20Abi, http, parseUnits } from "viem";
+import { base } from "viem/chains";
+import { useAccount, useConfig, useWalletClient } from "wagmi";
+import { getWalletClient } from "wagmi/actions";
 import Loader from "@/components/Shared/Loader";
 import {
   Button,
@@ -15,11 +20,16 @@ import {
   TextArea,
   Toggle
 } from "@/components/Shared/UI";
+import { BASE_RPC_URL } from "@/data/constants";
 import cn from "@/helpers/cn";
 import {
   EVERY1_FANDROPS_QUERY_KEY,
-  upsertProfileFanDropCampaign
+  getFanDropRuntimeConfig,
+  upsertProfileFanDropCampaign,
+  verifyFanDropRewardFunding
 } from "@/helpers/every1";
+import useCopyToClipboard from "@/hooks/useCopyToClipboard";
+import useHandleWrongNetwork from "@/hooks/useHandleWrongNetwork";
 import useProfileFanDrops from "@/hooks/useProfileFanDrops";
 import type { Every1FanDropCampaign } from "@/types/every1";
 import { mapEvery1FanDropToCard } from "../Missions/data";
@@ -34,11 +44,16 @@ type FanDropFormState = {
   missionId: null | string;
   referralTarget: string;
   rewardE1xp: string;
+  rewardPoolAmount: string;
   rewardPoolLabel: string;
+  rewardTokenAddress: string;
+  rewardTokenDecimals: string;
+  rewardTokenSymbol: string;
   startsAt: string;
   status: "active" | "archived" | "completed" | "draft" | "paused";
   subtitle: string;
   title: string;
+  winnerLimit: string;
 };
 
 const statusBadgeClassName: Record<Every1FanDropCampaign["status"], string> = {
@@ -52,6 +67,20 @@ const statusBadgeClassName: Record<Every1FanDropCampaign["status"], string> = {
     "bg-orange-500/12 text-orange-700 dark:bg-orange-500/12 dark:text-orange-300"
 };
 
+const settlementBadgeClassName: Record<
+  NonNullable<Every1FanDropCampaign["settlementStatus"]>,
+  string
+> = {
+  failed: "bg-rose-500/12 text-rose-700 dark:bg-rose-500/12 dark:text-rose-300",
+  funded: "bg-sky-500/12 text-sky-700 dark:bg-sky-500/12 dark:text-sky-300",
+  pending_funding:
+    "bg-violet-500/12 text-violet-700 dark:bg-violet-500/12 dark:text-violet-300",
+  settled:
+    "bg-emerald-500/12 text-emerald-700 dark:bg-emerald-500/12 dark:text-emerald-300",
+  settling:
+    "bg-amber-500/12 text-amber-700 dark:bg-amber-500/12 dark:text-amber-300"
+};
+
 const createEmptyForm = (): FanDropFormState => ({
   about: "",
   bannerUrl: "/buycoin.png",
@@ -62,15 +91,35 @@ const createEmptyForm = (): FanDropFormState => ({
   missionId: null,
   referralTarget: "2",
   rewardE1xp: "250",
+  rewardPoolAmount: "",
   rewardPoolLabel: "",
+  rewardTokenAddress: "",
+  rewardTokenDecimals: "18",
+  rewardTokenSymbol: "",
   startsAt: dayjs().format("YYYY-MM-DDTHH:mm"),
   status: "active",
   subtitle: "",
-  title: ""
+  title: "",
+  winnerLimit: ""
 });
 
 const toDateTimeInput = (value?: null | string) =>
   value ? dayjs(value).format("YYYY-MM-DDTHH:mm") : "";
+
+const formatPoolAmount = (
+  amount?: null | number | string,
+  symbol?: null | string
+) => {
+  const parsed = Number.parseFloat(String(amount ?? 0));
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return symbol || "Reward pool live";
+  }
+
+  return `${parsed.toLocaleString(undefined, {
+    maximumFractionDigits: 4
+  })} ${symbol || ""}`.trim();
+};
 
 const FanDrops = ({
   creatorName,
@@ -81,13 +130,36 @@ const FanDrops = ({
   creatorProfileId?: null | string;
   isCurrentProfile: boolean;
 }) => {
+  const { address } = useAccount();
+  const config = useConfig();
   const queryClient = useQueryClient();
+  const { data: walletClient } = useWalletClient({ chainId: base.id });
+  const handleWrongNetwork = useHandleWrongNetwork();
   const [form, setForm] = useState<FanDropFormState>(createEmptyForm);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [fundingMissionId, setFundingMissionId] = useState<null | string>(null);
+  const publicClient = useMemo(
+    () =>
+      createPublicClient({
+        chain: base,
+        transport: http(BASE_RPC_URL, { batch: { batchSize: 20 } })
+      }),
+    []
+  );
   const fanDropsQuery = useProfileFanDrops({
     creatorProfileId: creatorProfileId || null
   });
+  const runtimeConfigQuery = useQuery({
+    enabled: isCurrentProfile,
+    queryFn: getFanDropRuntimeConfig,
+    queryKey: ["fandrop-runtime-config"],
+    staleTime: 60000
+  });
+  const copyPayoutWallet = useCopyToClipboard(
+    runtimeConfigQuery.data?.payoutWalletAddress || "",
+    "Payout wallet copied!"
+  );
 
   const campaigns = useMemo(
     () =>
@@ -129,11 +201,23 @@ const FanDrops = ({
           : inviteTask.targetValue
       ),
       rewardE1xp: String(campaign.rewardE1xp || 0),
+      rewardPoolAmount:
+        campaign.rewardPoolAmount === null ||
+        campaign.rewardPoolAmount === undefined
+          ? ""
+          : String(campaign.rewardPoolAmount),
       rewardPoolLabel: campaign.rewardPoolLabel || "",
+      rewardTokenAddress: campaign.rewardTokenAddress || "",
+      rewardTokenDecimals: String(campaign.rewardTokenDecimals ?? 18),
+      rewardTokenSymbol: campaign.rewardTokenSymbol || "",
       startsAt: toDateTimeInput(campaign.startsAt),
       status: campaign.status,
       subtitle: campaign.subtitle || "",
-      title: campaign.title
+      title: campaign.title,
+      winnerLimit:
+        campaign.winnerLimit === null || campaign.winnerLimit === undefined
+          ? ""
+          : String(campaign.winnerLimit)
     });
     setIsEditorOpen(true);
   };
@@ -164,11 +248,23 @@ const FanDrops = ({
         missionId: form.missionId,
         referralTarget: Number.parseInt(form.referralTarget || "2", 10),
         rewardE1xp: Number.parseInt(form.rewardE1xp || "0", 10),
+        rewardPoolAmount: form.rewardPoolAmount.trim()
+          ? Number.parseFloat(form.rewardPoolAmount)
+          : null,
         rewardPoolLabel: form.rewardPoolLabel || null,
+        rewardTokenAddress: form.rewardTokenAddress || null,
+        rewardTokenDecimals: Number.parseInt(
+          form.rewardTokenDecimals || "18",
+          10
+        ),
+        rewardTokenSymbol: form.rewardTokenSymbol || null,
         startsAt: form.startsAt || null,
         status: form.status,
         subtitle: form.subtitle || null,
-        title: form.title.trim()
+        title: form.title.trim(),
+        winnerLimit: form.winnerLimit.trim()
+          ? Number.parseInt(form.winnerLimit, 10)
+          : null
       });
 
       await queryClient.invalidateQueries({
@@ -183,6 +279,83 @@ const FanDrops = ({
       toast.error("Couldn't save this FanDrop.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleFundRewardPool = async (campaign: Every1FanDropCampaign) => {
+    const payoutWalletAddress = runtimeConfigQuery.data?.payoutWalletAddress;
+
+    if (!campaign.rewardTokenAddress || !campaign.rewardPoolAmount) {
+      toast.error("Set the reward token and pool amount first.");
+      return;
+    }
+
+    if (!campaign.rewardTokenSymbol) {
+      toast.error("Reward token symbol is required before funding.");
+      return;
+    }
+
+    if (!payoutWalletAddress || !runtimeConfigQuery.data?.settlementEnabled) {
+      toast.error("FanDrop settlement is not available right now.");
+      return;
+    }
+
+    if (!address) {
+      toast.error("Connect your wallet to fund this reward pool.");
+      return;
+    }
+
+    try {
+      setFundingMissionId(campaign.missionId);
+      toast.loading("Funding reward pool...", { id: "fandrop-fund" });
+      await handleWrongNetwork({ chainId: base.id });
+      const client =
+        (await getWalletClient(config, { chainId: base.id })) || walletClient;
+
+      if (!client) {
+        throw new Error("Connect a Base wallet to fund this FanDrop.");
+      }
+
+      const txHash = await client.writeContract({
+        abi: erc20Abi,
+        account: client.account,
+        address: campaign.rewardTokenAddress as Address,
+        args: [
+          payoutWalletAddress as Address,
+          parseUnits(
+            String(campaign.rewardPoolAmount),
+            campaign.rewardTokenDecimals ?? 18
+          )
+        ],
+        functionName: "transfer"
+      });
+
+      await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+        timeout: 120000
+      });
+
+      await verifyFanDropRewardFunding(campaign.missionId, txHash);
+      await queryClient.invalidateQueries({
+        queryKey: [EVERY1_FANDROPS_QUERY_KEY]
+      });
+      toast.success("Reward pool funded", {
+        description: `${formatPoolAmount(
+          campaign.rewardPoolAmount,
+          campaign.rewardTokenSymbol
+        )} is now locked for auto-payout.`,
+        id: "fandrop-fund"
+      });
+    } catch (error) {
+      console.error("Failed to fund FanDrop reward pool", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Couldn't fund this reward pool.",
+        { id: "fandrop-fund" }
+      );
+    } finally {
+      setFundingMissionId(null);
     }
   };
 
@@ -243,7 +416,40 @@ const FanDrops = ({
                   <span className="rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-900">
                     {campaign.progressTotal} tasks
                   </span>
+                  {campaign.settlementStatus ? (
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-1 font-semibold capitalize",
+                        settlementBadgeClassName[campaign.settlementStatus]
+                      )}
+                    >
+                      {campaign.settlementStatus.replaceAll("_", " ")}
+                    </span>
+                  ) : null}
                 </div>
+                {campaign.rewardTokenAddress ? (
+                  <p className="text-[11px] text-gray-500 leading-4 dark:text-gray-400">
+                    {campaign.settlementStatus === "settled"
+                      ? `${campaign.rewardSentCount} reward${
+                          campaign.rewardSentCount === 1 ? "" : "s"
+                        } sent automatically.`
+                      : campaign.settlementStatus === "pending_funding"
+                        ? `${formatPoolAmount(
+                            campaign.rewardPoolAmount,
+                            campaign.rewardTokenSymbol
+                          )} is waiting to be funded.`
+                        : campaign.settlementStatus === "funded"
+                          ? `${formatPoolAmount(
+                              campaign.rewardPoolAmount,
+                              campaign.rewardTokenSymbol
+                            )} is funded and will auto-send after the campaign ends.`
+                          : campaign.settlementStatus === "settling"
+                            ? "Auto-sending rewards right now."
+                            : campaign.settlementStatus === "failed"
+                              ? "Some reward transfers need another settlement pass."
+                              : null}
+                  </p>
+                ) : null}
               </div>
 
               <div className="flex items-center gap-2">
@@ -259,6 +465,17 @@ const FanDrops = ({
                   <Button onClick={() => startEdit(campaign)} outline size="sm">
                     <PencilSquareIcon className="size-4" />
                     Edit
+                  </Button>
+                ) : null}
+                {isCurrentProfile &&
+                campaign.rewardTokenAddress &&
+                campaign.settlementStatus === "pending_funding" ? (
+                  <Button
+                    loading={fundingMissionId === campaign.missionId}
+                    onClick={() => void handleFundRewardPool(campaign)}
+                    size="sm"
+                  >
+                    Fund pool
                   </Button>
                 ) : null}
               </div>
@@ -279,7 +496,7 @@ const FanDrops = ({
             </h3>
             <p className="text-[12px] text-gray-500 dark:text-gray-400">
               {isCurrentProfile
-                ? "Create and manage reward races for your supporters."
+                ? "Create, fund, and auto-settle reward races for your supporters."
                 : `See ${creatorName}'s active and recent FanDrops.`}
             </p>
           </div>
@@ -304,7 +521,7 @@ const FanDrops = ({
               {form.missionId ? "Edit FanDrop" : "Create FanDrop"}
             </h3>
             <p className="text-[12px] text-gray-500 dark:text-gray-400">
-              Set the campaign copy, timing, pool label, and action targets.
+              Set the campaign copy, reward pool, and action targets.
             </p>
           </div>
 
@@ -363,6 +580,93 @@ const FanDrops = ({
               placeholder="Banner image URL"
               value={form.bannerUrl}
             />
+          </div>
+
+          <div className="grid gap-2.5 md:grid-cols-4">
+            <Input
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  rewardTokenAddress: event.target.value
+                }))
+              }
+              placeholder="Reward token address"
+              value={form.rewardTokenAddress}
+            />
+            <Input
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  rewardTokenSymbol: event.target.value.toUpperCase()
+                }))
+              }
+              placeholder="Token symbol"
+              value={form.rewardTokenSymbol}
+            />
+            <Input
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  rewardTokenDecimals: event.target.value
+                }))
+              }
+              placeholder="Decimals"
+              type="number"
+              value={form.rewardTokenDecimals}
+            />
+            <Input
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  rewardPoolAmount: event.target.value
+                }))
+              }
+              placeholder="Reward pool amount"
+              type="number"
+              value={form.rewardPoolAmount}
+            />
+          </div>
+
+          <div className="grid gap-2.5 md:grid-cols-2">
+            <Input
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  winnerLimit: event.target.value
+                }))
+              }
+              placeholder="Winner limit"
+              type="number"
+              value={form.winnerLimit}
+            />
+            <div className="rounded-2xl border border-gray-200 px-3 py-2.5 dark:border-gray-800">
+              <p className="font-medium text-[12px] text-gray-700 dark:text-gray-200">
+                Auto-send rewards
+              </p>
+              <p className="mt-1 text-[11px] text-gray-500 leading-4 dark:text-gray-400">
+                Save the FanDrop first, then fund the exact pool amount. EV1
+                auto-sends rewards after the campaign closes.
+              </p>
+              {runtimeConfigQuery.data?.payoutWalletAddress ? (
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    className="truncate text-left font-mono text-[11px] text-gray-600 dark:text-gray-300"
+                    onClick={() => void copyPayoutWallet()}
+                    type="button"
+                  >
+                    {runtimeConfigQuery.data.payoutWalletAddress}
+                  </button>
+                  <Button
+                    onClick={() => void copyPayoutWallet()}
+                    outline
+                    size="sm"
+                    type="button"
+                  >
+                    Copy wallet
+                  </Button>
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className="grid gap-2.5 md:grid-cols-4">

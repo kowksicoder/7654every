@@ -19,7 +19,9 @@ const Staff = () => {
   const { displayName, email, sessionToken } = useStaffAdminStore();
   const defaultSection = location.pathname.endsWith("/fandrops")
     ? "missions"
-    : "overview";
+    : location.pathname.endsWith("/collaborations")
+      ? "collaborations"
+      : "overview";
   const sessionQuery = useQuery({
     enabled: hasSupabaseConfig() && Boolean(sessionToken),
     queryFn: getStaffAdminSession,

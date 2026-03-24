@@ -4,6 +4,7 @@ import { AccountFeedType } from "@/data/enums";
 import generateUUID from "@/helpers//generateUUID";
 
 interface FeedTypeProps {
+  showCollaborations?: boolean;
   feedType: AccountFeedType;
   showFanDrops?: boolean;
   setFeedType: Dispatch<SetStateAction<AccountFeedType>>;
@@ -12,13 +13,16 @@ interface FeedTypeProps {
 const FeedType = ({
   feedType,
   setFeedType,
+  showCollaborations = false,
   showFanDrops = false
 }: FeedTypeProps) => {
   const tabs = [
     { name: "Feed", type: AccountFeedType.Feed },
-    { name: "Replies", type: AccountFeedType.Replies },
     { name: "Media", type: AccountFeedType.Media },
-    { name: "Collected", type: AccountFeedType.Collects },
+    { name: "Holdings", type: AccountFeedType.Collects },
+    ...(showCollaborations
+      ? [{ name: "Collaborations", type: AccountFeedType.Collaborations }]
+      : []),
     ...(showFanDrops
       ? [{ name: "FanDrops", type: AccountFeedType.FanDrops }]
       : [])

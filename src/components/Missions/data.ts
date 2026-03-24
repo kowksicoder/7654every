@@ -32,7 +32,7 @@ export interface FanDropCampaign {
 const STATIC_FANDROP_VISUALS: FanDropCampaign[] = [
   {
     about:
-      "Asake is opening an early fan run for his next drop. Join the circle, bring your people, and lock in your spot before rewards settle.",
+      "Asake is opening an early fan run for his next drop. Join the circle, bring your people, and lock in your spot before auto-rewards go out.",
     accentClassName:
       "bg-gradient-to-br from-emerald-300 via-lime-200 to-yellow-100 dark:from-emerald-500/30 dark:via-lime-500/15 dark:to-yellow-500/10",
     bannerImageUrl: "/buycoin.png",
@@ -84,7 +84,7 @@ const STATIC_FANDROP_VISUALS: FanDropCampaign[] = [
   },
   {
     about:
-      "Burna's drop queue is almost settled. You already cleared the actions, so this page becomes your holding screen until distribution completes.",
+      "Burna's drop queue is almost ready. You already cleared the actions, so this page becomes your holding screen until auto-send completes.",
     accentClassName:
       "bg-gradient-to-br from-amber-200 via-orange-100 to-rose-100 dark:from-amber-500/20 dark:via-orange-500/12 dark:to-rose-500/10",
     bannerImageUrl: "/buycoin.png",
@@ -99,7 +99,7 @@ const STATIC_FANDROP_VISUALS: FanDropCampaign[] = [
     rewardPoolLabel: "8,000 BURNA",
     slug: "burna-reward-wave",
     state: "completed",
-    subtitle: "Rewards are pending while the pool settles.",
+    subtitle: "Rewards are pending while the pool auto-sends.",
     tasks: [
       { label: "Join", state: "complete" },
       { label: "Invite 2 friends", state: "complete" },

@@ -29,6 +29,7 @@ import {
   TextArea,
   Toggle
 } from "@/components/Shared/UI";
+import CollaborationPayoutManager from "@/components/Staff/CollaborationPayoutManager";
 import FanDropManager from "@/components/Staff/FanDropManager";
 import { DEFAULT_AVATAR } from "@/data/constants";
 import cn from "@/helpers/cn";
@@ -104,6 +105,7 @@ type AdminSection =
   | "overview"
   | "users"
   | "coins"
+  | "collaborations"
   | "verification"
   | "creators"
   | "events"
@@ -170,6 +172,7 @@ const sectionItems: {
   { icon: ShieldCheckIcon, key: "overview", label: "Dashboard" },
   { icon: UsersIcon, key: "users", label: "Users" },
   { icon: RocketLaunchIcon, key: "coins", label: "Coins" },
+  { icon: BanknotesIcon, key: "collaborations", label: "Collabs" },
   { icon: ShieldCheckIcon, key: "verification", label: "Verification" },
   { icon: StarIcon, key: "creators", label: "Creators" },
   { icon: MegaphoneIcon, key: "events", label: "Events" },
@@ -3533,6 +3536,8 @@ const Overview = ({
 
   const renderMissions = () => <FanDropManager />;
 
+  const renderCollaborations = () => <CollaborationPayoutManager />;
+
   const renderShowcase = () => (
     <div className="space-y-3.5">
       <div className="grid gap-3 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
@@ -3764,6 +3769,8 @@ const Overview = ({
         return renderUsers();
       case "coins":
         return renderCoins();
+      case "collaborations":
+        return renderCollaborations();
       case "verification":
         return renderVerification();
       case "creators":

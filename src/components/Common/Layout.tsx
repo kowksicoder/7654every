@@ -1,7 +1,7 @@
 import { XCircleIcon } from "@heroicons/react/24/solid";
 import { usePrivy } from "@privy-io/react-auth";
 import { useIsClient } from "@uidotdev/usehooks";
-import { memo, useEffect, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation } from "react-router";
 import { Toaster, type ToasterProps } from "sonner";
 import NotificationIcon from "@/components/Notification/NotificationIcon";
@@ -33,6 +33,7 @@ const Layout = () => {
   const { profile } = useEvery1Store();
   const { viewMode } = useHomeTabStore();
   const isMounted = useIsClient();
+  const [mobileSplashReady, setMobileSplashReady] = useState(false);
   const { authenticated, ready, user } = usePrivy();
   const isStaffRoute = pathname.startsWith("/staff");
   const isHomeReelMode = pathname === "/" && viewMode === HomeFeedView.LIST;
@@ -59,6 +60,25 @@ const Layout = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!isMounted) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+
+    if (!mediaQuery.matches) {
+      setMobileSplashReady(true);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setMobileSplashReady(true);
+    }, 2000);
+
+    return () => window.clearTimeout(timer);
+  }, [isMounted]);
 
   useEffect(() => {
     if (!hasPrivy || !ready) {
@@ -91,8 +111,9 @@ const Layout = () => {
   ]);
 
   const accountLoading = !isMounted || (hasPrivy && !ready);
+  const showSplash = accountLoading || !mobileSplashReady;
 
-  if (accountLoading) {
+  if (showSplash) {
     return <FullPageLoader />;
   }
 

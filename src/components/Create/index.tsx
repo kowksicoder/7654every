@@ -24,6 +24,10 @@ import MetaTags from "@/components/Common/MetaTags";
 import { ActionStatusModal } from "@/components/Shared/UI";
 import { BASE_RPC_URL, ZORA_API_KEY } from "@/data/constants";
 import cn from "@/helpers/cn";
+import {
+  createCollaborationCoinInvite,
+  getPublicEvery1Profile
+} from "@/helpers/every1";
 import { getSupabaseClient, hasSupabaseConfig } from "@/helpers/supabase";
 import useHandleWrongNetwork from "@/hooks/useHandleWrongNetwork";
 import useOpenAuth from "@/hooks/useOpenAuth";
@@ -35,7 +39,7 @@ const CREATE_BANNER_IMAGE =
   "https://i.pinimg.com/736x/81/95/3d/81953df1510811e814ceafc09bd7280e.jpg";
 const NAIRA_SYMBOL = "\u20A6";
 
-type CreateTab = "community" | "creator";
+type CreateTab = "collaboration" | "community" | "creator";
 type CreateStatusModalState = null | {
   description?: string;
   title: string;
@@ -50,11 +54,20 @@ const slugifyValue = (value: string) =>
     .replace(/-{2,}/g, "-")
     .replace(/^-|-$/g, "");
 
+const formatSplitPercent = (value: number) =>
+  Number.isInteger(value)
+    ? String(value)
+    : value.toFixed(2).replace(/\.?0+$/, "");
+
 const Create = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialTab =
-    searchParams.get("tab") === "community" ? "community" : "creator";
+    searchParams.get("tab") === "community"
+      ? "community"
+      : searchParams.get("tab") === "collaboration"
+        ? "collaboration"
+        : "creator";
   const { address } = useAccount();
   const config = useConfig();
   const { data: walletClient } = useWalletClient({ chainId: base.id });
@@ -68,6 +81,9 @@ const Create = () => {
   const [ticker, setTicker] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [collaboratorHandle, setCollaboratorHandle] = useState("");
+  const [inviteNote, setInviteNote] = useState("");
+  const [creatorSplit, setCreatorSplit] = useState("60");
   const [fileName, setFileName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
@@ -86,10 +102,28 @@ const Create = () => {
   );
 
   const isCommunity = activeTab === "community";
+  const isCollaboration = activeTab === "collaboration";
   const hasTicker = Boolean(ticker.trim());
-  const canSubmit = Boolean(selectedFile && ticker.trim() && name.trim());
+  const creatorSplitValue = Number.parseFloat(creatorSplit || "0");
+  const collaboratorSplitValue = Math.max(
+    0,
+    Number.parseFloat((100 - creatorSplitValue).toFixed(2))
+  );
+  const isSplitValid =
+    Number.isFinite(creatorSplitValue) &&
+    creatorSplitValue > 0 &&
+    creatorSplitValue < 100 &&
+    Number.isFinite(collaboratorSplitValue) &&
+    collaboratorSplitValue > 0;
+  const canSubmit = Boolean(
+    selectedFile &&
+      ticker.trim() &&
+      name.trim() &&
+      (!isCollaboration || (collaboratorHandle.trim() && isSplitValid))
+  );
   const previewTicker =
-    ticker.trim() || (isCommunity ? "community" : "creator");
+    ticker.trim() ||
+    (isCommunity ? "community" : isCollaboration ? "collab" : "creator");
   const previewCurrencyTicker = `${NAIRA_SYMBOL}${previewTicker}`;
   const previewImage = filePreviewUrl || CREATE_BANNER_IMAGE;
   const topCopy = isCommunity
@@ -102,15 +136,26 @@ const Create = () => {
         previewBody:
           "Your community coin launches with its group already linked and ready for members."
       }
-    : {
-        actionLabel: "Create coin",
-        availabilityLabel: "Creator coin ready",
-        heroTitle: "Launch a creator coin",
-        introTitle: "Upload from gallery and finish everything on one form.",
-        postDestination: "Every1 Feed",
-        previewBody:
-          "A tighter desktop canvas for ticker, cover, caption, and launch."
-      };
+    : isCollaboration
+      ? {
+          actionLabel: "Send collaboration invite",
+          availabilityLabel: "Collaboration invite ready",
+          heroTitle: "Start a collaboration coin",
+          introTitle:
+            "Lock the split up front and let your collaborator approve it.",
+          postDestination: "Invite first, launch after approval",
+          previewBody:
+            "The coin stays pending until your collaborator accepts the exact revenue split."
+        }
+      : {
+          actionLabel: "Create coin",
+          availabilityLabel: "Creator coin ready",
+          heroTitle: "Launch a creator coin",
+          introTitle: "Upload from gallery and finish everything on one form.",
+          postDestination: "Every1 Feed",
+          previewBody:
+            "A tighter desktop canvas for ticker, cover, caption, and launch."
+        };
 
   useEffect(() => {
     return () => {
@@ -270,6 +315,52 @@ const Create = () => {
     return data as null | { slug?: null | string };
   };
 
+  const persistCollaborationInvite = async ({
+    coverImageUrl,
+    metadataUri
+  }: {
+    coverImageUrl: null | string;
+    metadataUri: string;
+  }) => {
+    if (!profile?.id) {
+      throw new Error(
+        "Finish your Every1 profile setup before creating a collaboration coin."
+      );
+    }
+
+    const normalizedCollaboratorHandle = collaboratorHandle
+      .trim()
+      .replace(/^@+/, "");
+
+    if (!normalizedCollaboratorHandle) {
+      throw new Error("Add the collaborator username before continuing.");
+    }
+
+    const collaboratorProfile = await getPublicEvery1Profile({
+      username: normalizedCollaboratorHandle
+    });
+
+    if (!collaboratorProfile?.id) {
+      throw new Error("That collaborator profile could not be found.");
+    }
+
+    if (collaboratorProfile.id === profile.id) {
+      throw new Error("You cannot invite your own profile to collaborate.");
+    }
+
+    return await createCollaborationCoinInvite(profile.id, {
+      collaboratorProfileId: collaboratorProfile.id,
+      collaboratorUsername: normalizedCollaboratorHandle,
+      coverImageUrl,
+      creatorSplit: creatorSplitValue,
+      description: description.trim() || null,
+      inviteNote: inviteNote.trim() || null,
+      metadataUri,
+      name: name.trim(),
+      ticker: ticker.trim()
+    });
+  };
+
   const handleSubmit = async () => {
     if (isSubmitting) {
       return;
@@ -295,8 +386,12 @@ const Create = () => {
       setStatusModal({
         description: isCommunity
           ? "Publishing your community coin and linked group."
-          : "Publishing your creator coin to Every1 and Base.",
-        title: "Launching your coin, please wait",
+          : isCollaboration
+            ? "Saving the project terms and sending the collaboration invite."
+            : "Publishing your creator coin to Every1 and Base.",
+        title: isCollaboration
+          ? "Sending your collaboration invite, please wait"
+          : "Launching your coin, please wait",
         tone: "pending"
       });
       await handleWrongNetwork({ chainId: base.id });
@@ -318,6 +413,26 @@ const Create = () => {
         )
         .withImage(selectedFile)
         .upload(createZoraUploaderForCreator(address as Address));
+
+      if (isCollaboration) {
+        await persistCollaborationInvite({
+          coverImageUrl: metadataUpload.metadata.image || null,
+          metadataUri: metadataUpload.url
+        });
+        setStatusModal({
+          description:
+            "Your collaborator needs to accept the split before the coin can go live.",
+          title: "Invite sent",
+          tone: "success"
+        });
+        await new Promise((resolve) => setTimeout(resolve, 1600));
+        navigate(
+          profile?.username || profile?.zoraHandle
+            ? `/@${profile?.username || profile?.zoraHandle}?tab=collaborations`
+            : `/account/${address}?tab=collaborations`
+        );
+        return;
+      }
 
       const createdCoin = await createCoin({
         call: {
@@ -377,7 +492,9 @@ const Create = () => {
       toast.error(
         isCommunity
           ? "Failed to create community coin"
-          : "Failed to create coin",
+          : isCollaboration
+            ? "Failed to send collaboration invite"
+            : "Failed to create coin",
         {
           description:
             error instanceof Error ? error.message : "Please try again."
@@ -501,7 +618,11 @@ const Create = () => {
               desktop ? "mb-1 text-sm" : "mb-0.5 text-[10px]"
             )}
           >
-            {isCommunity ? "Coin + community name" : "Name"}
+            {isCommunity
+              ? "Coin + community name"
+              : isCollaboration
+                ? "Project name"
+                : "Name"}
           </span>
           <input
             className={cn(
@@ -511,7 +632,13 @@ const Create = () => {
                 : "rounded-[14px] px-2.5 py-2 text-sm"
             )}
             onChange={(event) => setName(event.target.value)}
-            placeholder={isCommunity ? "Community name" : "Name"}
+            placeholder={
+              isCommunity
+                ? "Community name"
+                : isCollaboration
+                  ? "Asake x Rema Album Coin"
+                  : "Name"
+            }
             value={name}
           />
         </label>
@@ -536,11 +663,122 @@ const Create = () => {
             placeholder={
               isCommunity
                 ? "What is this community about?"
-                : "Tell people what this post or drop is about"
+                : isCollaboration
+                  ? "What is this joint project about?"
+                  : "Tell people what this post or drop is about"
             }
             value={description}
           />
         </label>
+
+        {isCollaboration ? (
+          <>
+            <label className="block">
+              <span
+                className={cn(
+                  "block text-gray-500 dark:text-white/58",
+                  desktop ? "mb-1 text-sm" : "mb-0.5 text-[10px]"
+                )}
+              >
+                Collaborator username
+              </span>
+              <div
+                className={cn(
+                  "flex items-center bg-gray-100 dark:bg-[#1b1c20]",
+                  desktop
+                    ? "rounded-[16px] px-4 py-2.5"
+                    : "rounded-[14px] px-2.5 py-2"
+                )}
+              >
+                <span
+                  className={cn(
+                    "mr-1 font-semibold text-gray-400 dark:text-white/42",
+                    desktop ? "text-lg" : "text-sm"
+                  )}
+                >
+                  @
+                </span>
+                <input
+                  className={cn(
+                    "w-full border-none bg-transparent p-0 font-semibold text-gray-950 outline-none placeholder:text-gray-400 focus:ring-0 dark:text-white dark:placeholder:text-white/24",
+                    desktop ? "text-base" : "text-sm"
+                  )}
+                  onChange={(event) =>
+                    setCollaboratorHandle(
+                      event.target.value.replace(/^@+/, "").trim().toLowerCase()
+                    )
+                  }
+                  placeholder="remajr"
+                  value={collaboratorHandle}
+                />
+              </div>
+            </label>
+
+            <label className="block">
+              <span
+                className={cn(
+                  "block text-gray-500 dark:text-white/58",
+                  desktop ? "mb-1 text-sm" : "mb-0.5 text-[10px]"
+                )}
+              >
+                Your split
+              </span>
+              <div
+                className={cn(
+                  "rounded-[16px] bg-gray-100 px-4 py-3 dark:bg-[#1b1c20]",
+                  !desktop && "rounded-[14px] px-2.5 py-2.5"
+                )}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <input
+                    className={cn(
+                      "w-20 border-none bg-transparent p-0 font-semibold text-gray-950 outline-none placeholder:text-gray-400 focus:ring-0 dark:text-white dark:placeholder:text-white/24",
+                      desktop ? "text-2xl" : "text-base"
+                    )}
+                    max="99"
+                    min="1"
+                    onChange={(event) => setCreatorSplit(event.target.value)}
+                    placeholder="60"
+                    type="number"
+                    value={creatorSplit}
+                  />
+                  <span className="font-semibold text-gray-500 text-sm dark:text-white/50">
+                    %
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-gray-500 dark:text-white/55">
+                  <span>You</span>
+                  <span>
+                    @{collaboratorHandle || "collaborator"} gets{" "}
+                    {formatSplitPercent(collaboratorSplitValue)}%
+                  </span>
+                </div>
+              </div>
+            </label>
+
+            <label className="block">
+              <span
+                className={cn(
+                  "block text-gray-500 dark:text-white/58",
+                  desktop ? "mb-1 text-sm" : "mb-0.5 text-[10px]"
+                )}
+              >
+                Invite note
+              </span>
+              <textarea
+                className={cn(
+                  "w-full resize-none border-none bg-gray-100 text-gray-950 outline-none placeholder:text-gray-400 focus:ring-0 dark:bg-[#1b1c20] dark:text-white dark:placeholder:text-white/24",
+                  desktop
+                    ? "min-h-16 rounded-[16px] px-4 py-2.5 text-sm"
+                    : "min-h-14 rounded-[14px] px-2.5 py-2 text-xs"
+                )}
+                onChange={(event) => setInviteNote(event.target.value)}
+                placeholder="Add a quick note about the project or split."
+                value={inviteNote}
+              />
+            </label>
+          </>
+        ) : null}
       </div>
 
       <button
@@ -637,7 +875,9 @@ const Create = () => {
               >
                 {isCommunity
                   ? "Add the image members will see first."
-                  : "Add an image for the post."}
+                  : isCollaboration
+                    ? "Add the cover both collaborators will review."
+                    : "Add an image for the post."}
               </p>
             </div>
           </div>
@@ -658,7 +898,9 @@ const Create = () => {
         >
           <span className="text-gray-600 dark:text-white/72">You receive</span>
           <span className="font-medium text-gray-950 dark:text-white">
-            10,000,000
+            {isCollaboration
+              ? `${formatSplitPercent(creatorSplitValue)}%`
+              : "10,000,000"}
           </span>
         </div>
         <div
@@ -667,11 +909,28 @@ const Create = () => {
             desktop ? "py-1 text-base" : "py-0.5 text-xs"
           )}
         >
-          <span className="text-gray-600 dark:text-white/72">Post to</span>
+          <span className="text-gray-600 dark:text-white/72">
+            {isCollaboration ? "Collaborator share" : "Post to"}
+          </span>
           <span className="text-right text-gray-900 dark:text-white/88">
-            {topCopy.postDestination}
+            {isCollaboration
+              ? `${formatSplitPercent(collaboratorSplitValue)}%`
+              : topCopy.postDestination}
           </span>
         </div>
+        {isCollaboration ? (
+          <div
+            className={cn(
+              "flex items-center justify-between",
+              desktop ? "py-1 text-base" : "py-0.5 text-xs"
+            )}
+          >
+            <span className="text-gray-600 dark:text-white/72">Flow</span>
+            <span className="text-right text-gray-900 dark:text-white/88">
+              {topCopy.postDestination}
+            </span>
+          </div>
+        ) : null}
         <button
           className={cn(
             "flex w-full items-center justify-between text-left",
@@ -730,14 +989,19 @@ const Create = () => {
       >
         Creator
       </button>
-      <span
+      <button
         className={cn(
-          "cursor-not-allowed text-gray-400 dark:text-white/28",
-          desktop ? "px-2.5 text-sm" : "px-2 text-[11px]"
+          "rounded-full font-medium transition",
+          activeTab === "collaboration"
+            ? "bg-gray-950 text-white dark:bg-white dark:text-black"
+            : "text-gray-500 hover:text-gray-900 dark:text-white/44 dark:hover:text-white",
+          desktop ? "px-3 py-1.5 text-sm" : "px-2.5 py-1 text-[11px]"
         )}
+        onClick={() => handleSelectTab("collaboration")}
+        type="button"
       >
         Collaboration
-      </span>
+      </button>
       <button
         className={cn(
           "rounded-full font-medium transition",
@@ -926,13 +1190,17 @@ const Create = () => {
                     <span className="rounded-full bg-white/16 px-3 py-1.5 text-white text-xs backdrop-blur-md">
                       {isCommunity
                         ? "Community linked on publish"
-                        : "Creator coin"}
+                        : isCollaboration
+                          ? "Invite must be accepted"
+                          : "Creator coin"}
                     </span>
                   </div>
                   <p className="max-w-sm font-semibold text-4xl text-white leading-tight">
                     {isCommunity
                       ? "Launch the community and its coin in one move."
-                      : "Shape the story before it hits the feed."}
+                      : isCollaboration
+                        ? "Set the split, send the invite, and wait for approval."
+                        : "Shape the story before it hits the feed."}
                   </p>
                   <p className="mt-3 max-w-sm text-sm text-white/78 leading-6">
                     {topCopy.previewBody}
@@ -974,7 +1242,13 @@ const Create = () => {
 
         <ActionStatusModal
           description={statusModal?.description}
-          label={isCommunity ? "Community coin" : "Creator coin"}
+          label={
+            isCommunity
+              ? "Community coin"
+              : isCollaboration
+                ? "Collaboration coin"
+                : "Creator coin"
+          }
           show={Boolean(statusModal)}
           title={statusModal?.title || ""}
           tone={statusModal?.tone || "pending"}

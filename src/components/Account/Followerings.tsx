@@ -1,158 +1,123 @@
-import plur from "plur";
-import { type FC, useEffect, useState } from "react";
-import { useLocation } from "react-router";
-import Followers from "@/components/Shared/Modal/Followers";
-import Following from "@/components/Shared/Modal/Following";
-import { Modal } from "@/components/Shared/UI";
+import { useQuery } from "@tanstack/react-query";
+import { type GetCoinResponse, getCoin, setApiKey } from "@zoralabs/coins-sdk";
+import type { Address } from "viem";
+import { base } from "viem/chains";
+import { ZORA_API_KEY } from "@/data/constants";
 import getAccount from "@/helpers//getAccount";
-import humanize from "@/helpers/humanize";
-import { isEvery1OnlyAccount } from "@/helpers/privy";
-import useEvery1AccountProfile from "@/hooks/useEvery1AccountProfile";
-import useEvery1FollowStats from "@/hooks/useEvery1FollowStats";
 import {
-  type AccountFragment,
-  useAccountStatsQuery
-} from "@/indexer/generated";
+  EVERY1_PUBLIC_PROFILE_STATS_QUERY_KEY,
+  getPublicProfileStats
+} from "@/helpers/every1";
+import getAccountAttribute from "@/helpers/getAccountAttribute";
+import humanize from "@/helpers/humanize";
+import { formatUsdMetric } from "@/helpers/liveCreatorData";
+import type { AccountFragment } from "@/indexer/generated";
 
 interface FolloweringsProps {
   account: AccountFragment;
+  e1xpTotal?: number;
 }
 
-const Followerings = ({ account }: FolloweringsProps) => {
-  const location = useLocation();
-  const [showFollowingModal, setShowFollowingModal] = useState(false);
-  const [showFollowersModal, setShowFollowersModal] = useState(false);
-  const { profileId } = useEvery1AccountProfile(account);
-  const supportsLegacyFeedStats = !isEvery1OnlyAccount(account);
-  const { stats: every1FollowStats, isLoading: loadingEvery1FollowStats } =
-    useEvery1FollowStats(profileId);
+setApiKey(ZORA_API_KEY);
 
-  useEffect(() => {
-    setShowFollowersModal(false);
-    setShowFollowingModal(false);
-  }, [location.key]);
+const Followerings = ({ account, e1xpTotal = 0 }: FolloweringsProps) => {
+  const accountInfo = getAccount(account);
+  const creatorCoinAttribute = getAccountAttribute(
+    "creatorCoinAddress",
+    account?.metadata?.attributes
+  );
 
-  const { data, loading } = useAccountStatsQuery({
-    skip: !supportsLegacyFeedStats,
-    variables: { request: { account: account.address } }
+  const profileStatsQuery = useQuery({
+    queryFn: async () =>
+      await getPublicProfileStats({
+        username: accountInfo.username,
+        walletAddress: account.owner || account.address
+      }),
+    queryKey: [
+      EVERY1_PUBLIC_PROFILE_STATS_QUERY_KEY,
+      account.address,
+      account.owner || null,
+      accountInfo.username
+    ]
   });
 
-  if (loadingEvery1FollowStats || (supportsLegacyFeedStats && loading)) {
+  const creatorCoinAddress =
+    creatorCoinAttribute || profileStatsQuery.data?.creatorCoinAddress || null;
+
+  const { data: creatorCoin, isLoading: loadingCreatorCoin } = useQuery<
+    GetCoinResponse["zora20Token"] | null
+  >({
+    enabled: Boolean(creatorCoinAddress),
+    queryFn: async () => {
+      const coin = await getCoin({
+        address: creatorCoinAddress as Address,
+        chain: base.id
+      });
+
+      return coin.data?.zora20Token ?? null;
+    },
+    queryKey: ["profile-creator-coin-stats", creatorCoinAddress]
+  });
+
+  if (
+    profileStatsQuery.isLoading ||
+    (creatorCoinAddress && loadingCreatorCoin)
+  ) {
     return (
-      <div className="grid grid-cols-4 gap-2 sm:gap-3">
-        {Array.from({ length: 4 }).map((_, index) => (
+      <div className="grid grid-cols-3 overflow-hidden rounded-[1.1rem] border border-gray-200 bg-gray-50/90 sm:grid-cols-5 dark:border-white/10 dark:bg-white/[0.05]">
+        {Array.from({ length: 5 }).map((_, index) => (
           <div
-            className="h-19 animate-pulse rounded-[1.15rem] border border-gray-200/80 bg-gray-100/80 dark:border-gray-800 dark:bg-gray-900"
+            className="h-13 animate-pulse bg-white dark:bg-white/[0.06]"
             key={index}
+            style={
+              index === 0
+                ? undefined
+                : { borderLeft: "1px solid rgba(148,163,184,0.18)" }
+            }
           />
         ))}
       </div>
     );
   }
 
-  if (!profileId && !supportsLegacyFeedStats && !data) {
-    return null;
-  }
+  const marketCapValue = Number.parseFloat(creatorCoin?.marketCap ?? "0");
+  const volume24hValue = Number.parseFloat(creatorCoin?.volume24h ?? "0");
+  const totalSupplyValue = Number.parseFloat(creatorCoin?.totalSupply ?? "0");
+  const priceValue =
+    Number.isFinite(marketCapValue) &&
+    marketCapValue > 0 &&
+    Number.isFinite(totalSupplyValue) &&
+    totalSupplyValue > 0
+      ? marketCapValue / totalSupplyValue
+      : 0;
+  const earningsValue = profileStatsQuery.data?.referralCoinRewards ?? 0;
+  const hasCreatorCoin = Boolean(creatorCoinAddress && creatorCoin);
 
-  const feedStats = data?.accountStats.feedStats;
-  const stats = profileId
-    ? {
-        followers: every1FollowStats.followers,
-        following: every1FollowStats.following,
-        posts: feedStats?.posts ?? 0,
-        replies: feedStats?.comments ?? 0
-      }
-    : {
-        followers: data?.accountStats.graphFollowStats.followers ?? 0,
-        following: data?.accountStats.graphFollowStats.following ?? 0,
-        posts: feedStats?.posts ?? 0,
-        replies: feedStats?.comments ?? 0
-      };
+  const formatCoinMetric = (value: number, digits = 2) =>
+    hasCreatorCoin ? formatUsdMetric(value, digits) : "--";
 
-  type ModalContentProps = {
-    profileId?: null | string;
-    username: string;
-    address: string;
+  const StatCell = ({ label, value }: { label: string; value: string }) => {
+    return (
+      <div className="flex min-h-[3rem] flex-col justify-center px-1.5 py-1.5 text-center transition hover:bg-gray-100/90 sm:min-h-[3.25rem] dark:hover:bg-white/[0.03]">
+        <div className="truncate font-semibold text-[0.88rem] text-gray-950 leading-none sm:text-[0.98rem] dark:text-white">
+          {value}
+        </div>
+        <div className="mt-0.5 text-[8px] text-gray-500 uppercase tracking-[0.08em] sm:text-[9px] dark:text-white/[0.55]">
+          {label}
+        </div>
+      </div>
+    );
   };
 
-  const renderModal = (
-    show: boolean,
-    setShow: (value: boolean) => void,
-    title: string,
-    Content: FC<ModalContentProps>
-  ) => (
-    <Modal onClose={() => setShow(false)} show={show} title={title}>
-      <Content
-        address={String(account.address)}
-        profileId={profileId}
-        username={getAccount(account).username}
-      />
-    </Modal>
-  );
-
-  const statClass =
-    "rounded-[1.15rem] border border-gray-200/80 bg-gray-50/80 px-2.5 py-3 text-center transition-colors dark:border-gray-800 dark:bg-gray-900/80";
-
   return (
-    <div className="grid grid-cols-4 gap-2 sm:gap-3">
-      <div className={statClass}>
-        <div className="font-semibold text-base text-gray-950 sm:text-lg dark:text-gray-50">
-          {humanize(stats.posts)}
-        </div>
-        <div className="mt-1 text-[10px] text-gray-500 uppercase tracking-[0.18em] dark:text-gray-400">
-          Posts
-        </div>
+    <div className="overflow-hidden rounded-[1.1rem] border border-gray-200 bg-gray-50/90 backdrop-blur dark:border-white/10 dark:bg-white/[0.05]">
+      <div className="grid grid-cols-3 divide-x divide-y divide-gray-200 sm:grid-cols-5 sm:divide-y-0 dark:divide-white/10">
+        <StatCell label="E1XP" value={humanize(e1xpTotal)} />
+        <StatCell label="MC" value={formatCoinMetric(marketCapValue)} />
+        <StatCell label="Earnings" value={formatUsdMetric(earningsValue)} />
+        <StatCell label="Price" value={formatCoinMetric(priceValue, 4)} />
+        <StatCell label="Volume" value={formatCoinMetric(volume24hValue)} />
       </div>
-      <div className={statClass}>
-        <div className="font-semibold text-base text-gray-950 sm:text-lg dark:text-gray-50">
-          {humanize(stats.replies)}
-        </div>
-        <div className="mt-1 text-[10px] text-gray-500 uppercase tracking-[0.18em] dark:text-gray-400">
-          Replies
-        </div>
-      </div>
-      <button
-        className={statClass}
-        onClick={() => {
-          umami.track("open_followers");
-          setShowFollowersModal(true);
-        }}
-        type="button"
-      >
-        <div className="font-semibold text-base text-gray-950 sm:text-lg dark:text-gray-50">
-          {humanize(stats.followers)}
-        </div>
-        <div className="mt-1 text-[10px] text-gray-500 uppercase tracking-[0.18em] dark:text-gray-400">
-          {plur("Follower", stats.followers)}
-        </div>
-      </button>
-      <button
-        className={statClass}
-        onClick={() => {
-          umami.track("open_following");
-          setShowFollowingModal(true);
-        }}
-        type="button"
-      >
-        <div className="font-semibold text-base text-gray-950 sm:text-lg dark:text-gray-50">
-          {humanize(stats.following)}
-        </div>
-        <div className="mt-1 text-[10px] text-gray-500 uppercase tracking-[0.18em] dark:text-gray-400">
-          Following
-        </div>
-      </button>
-      {renderModal(
-        showFollowingModal,
-        setShowFollowingModal,
-        "Following",
-        Following
-      )}
-      {renderModal(
-        showFollowersModal,
-        setShowFollowersModal,
-        "Followers",
-        Followers
-      )}
     </div>
   );
 };

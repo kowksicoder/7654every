@@ -37,11 +37,16 @@ type FanDropAdminFormState = {
   missionId: null | string;
   referralTarget: string;
   rewardE1xp: string;
+  rewardPoolAmount: string;
   rewardPoolLabel: string;
+  rewardTokenAddress: string;
+  rewardTokenDecimals: string;
+  rewardTokenSymbol: string;
   startsAt: string;
   status: "active" | "archived" | "completed" | "draft" | "paused";
   subtitle: string;
   title: string;
+  winnerLimit: string;
 };
 
 const createEmptyForm = (): FanDropAdminFormState => ({
@@ -56,11 +61,16 @@ const createEmptyForm = (): FanDropAdminFormState => ({
   missionId: null,
   referralTarget: "2",
   rewardE1xp: "250",
+  rewardPoolAmount: "",
   rewardPoolLabel: "",
+  rewardTokenAddress: "",
+  rewardTokenDecimals: "18",
+  rewardTokenSymbol: "",
   startsAt: dayjs().format("YYYY-MM-DDTHH:mm"),
   status: "draft",
   subtitle: "",
-  title: ""
+  title: "",
+  winnerLimit: ""
 });
 
 const toDateTimeInput = (value?: null | string) =>
@@ -116,11 +126,23 @@ const FanDropManager = () => {
       missionId: fanDrop.missionId,
       referralTarget: String(fanDrop.referralTarget || 2),
       rewardE1xp: String(fanDrop.rewardE1xp || 0),
+      rewardPoolAmount:
+        fanDrop.rewardPoolAmount === null ||
+        fanDrop.rewardPoolAmount === undefined
+          ? ""
+          : String(fanDrop.rewardPoolAmount),
       rewardPoolLabel: fanDrop.rewardPoolLabel || "",
+      rewardTokenAddress: fanDrop.rewardTokenAddress || "",
+      rewardTokenDecimals: String(fanDrop.rewardTokenDecimals ?? 18),
+      rewardTokenSymbol: fanDrop.rewardTokenSymbol || "",
       startsAt: toDateTimeInput(fanDrop.startsAt),
       status: fanDrop.status as FanDropAdminFormState["status"],
       subtitle: fanDrop.subtitle || "",
-      title: fanDrop.title
+      title: fanDrop.title,
+      winnerLimit:
+        fanDrop.winnerLimit === null || fanDrop.winnerLimit === undefined
+          ? ""
+          : String(fanDrop.winnerLimit)
     });
   };
 
@@ -151,11 +173,23 @@ const FanDropManager = () => {
         missionId: form.missionId,
         referralTarget: Number.parseInt(form.referralTarget || "2", 10),
         rewardE1xp: Number.parseInt(form.rewardE1xp || "0", 10),
+        rewardPoolAmount: form.rewardPoolAmount.trim()
+          ? Number.parseFloat(form.rewardPoolAmount)
+          : null,
         rewardPoolLabel: form.rewardPoolLabel || null,
+        rewardTokenAddress: form.rewardTokenAddress || null,
+        rewardTokenDecimals: Number.parseInt(
+          form.rewardTokenDecimals || "18",
+          10
+        ),
+        rewardTokenSymbol: form.rewardTokenSymbol || null,
         startsAt: form.startsAt || null,
         status: form.status,
         subtitle: form.subtitle || null,
-        title: form.title.trim()
+        title: form.title.trim(),
+        winnerLimit: form.winnerLimit.trim()
+          ? Number.parseInt(form.winnerLimit, 10)
+          : null
       });
 
       await Promise.all([
@@ -314,6 +348,63 @@ const FanDropManager = () => {
                 value={form.bannerUrl}
               />
             </div>
+
+            <div className="grid gap-2.5 md:grid-cols-4">
+              <Input
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    rewardTokenAddress: event.target.value
+                  }))
+                }
+                placeholder="Reward token address"
+                value={form.rewardTokenAddress}
+              />
+              <Input
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    rewardTokenSymbol: event.target.value.toUpperCase()
+                  }))
+                }
+                placeholder="Token symbol"
+                value={form.rewardTokenSymbol}
+              />
+              <Input
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    rewardTokenDecimals: event.target.value
+                  }))
+                }
+                placeholder="Decimals"
+                type="number"
+                value={form.rewardTokenDecimals}
+              />
+              <Input
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    rewardPoolAmount: event.target.value
+                  }))
+                }
+                placeholder="Reward pool amount"
+                type="number"
+                value={form.rewardPoolAmount}
+              />
+            </div>
+
+            <Input
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  winnerLimit: event.target.value
+                }))
+              }
+              placeholder="Winner limit"
+              type="number"
+              value={form.winnerLimit}
+            />
 
             <div className="grid gap-2.5 md:grid-cols-4">
               <Input
@@ -488,7 +579,27 @@ const FanDropManager = () => {
                       <span className="rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-900">
                         {fanDrop.rewardPoolLabel || "Reward pool live"}
                       </span>
+                      {fanDrop.settlementStatus ? (
+                        <span className="rounded-full bg-gray-100 px-2 py-1 capitalize dark:bg-gray-900">
+                          {fanDrop.settlementStatus.replaceAll("_", " ")}
+                        </span>
+                      ) : null}
+                      {fanDrop.rewardPoolAmount ? (
+                        <span className="rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-900">
+                          {fanDrop.rewardPoolAmount.toLocaleString(undefined, {
+                            maximumFractionDigits: 4
+                          })}{" "}
+                          {fanDrop.rewardTokenSymbol || ""}
+                        </span>
+                      ) : null}
                     </div>
+                    {fanDrop.rewardTokenAddress ? (
+                      <p className="mt-2 text-[11px] text-gray-500 leading-4 dark:text-gray-400">
+                        {fanDrop.fundedAt
+                          ? `Funded and ready for auto-settlement. ${fanDrop.rewardSentCount} sent, ${fanDrop.rewardFailedCount} failed.`
+                          : "Waiting for creator funding before auto-payout can start."}
+                      </p>
+                    ) : null}
                   </div>
                 ))}
               </div>

@@ -83,7 +83,7 @@ const Routes = () => {
           <Route element={<Bookmarks />} path="bookmarks" />
           <Route element={<ENS />} path="ens" />
           <Route element={<Notification />} path="notifications" />
-          <Route element={<ViewAccount />} path="@:username" />
+          <Route element={<ViewAccount />} path=":username" />
           <Route element={<ViewAccount />} path="account/:address" />
           <Route element={<ViewAccount />} path="u/:username" />
           <Route path="g/:address">
@@ -123,6 +123,7 @@ const Routes = () => {
           <Route path="staff">
             <Route element={<Staff />} index />
             <Route element={<Staff />} path="fandrops" />
+            <Route element={<Staff />} path="collaborations" />
           </Route>
           <Route element={<Support />} path="support" />
           <Route element={<Terms />} path="terms" />

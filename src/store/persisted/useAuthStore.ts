@@ -16,7 +16,7 @@ interface State {
   signOut: () => void;
 }
 
-const { store } = createPersistedTrackedStore<State>(
+const { store, useStore: useAuthStore } = createPersistedTrackedStore<State>(
   (set, get) => ({
     accessToken: null,
     clearTokens: () => set({ accessToken: null, refreshToken: null }),
@@ -39,3 +39,4 @@ export const signIn = (tokens: { accessToken: string; refreshToken: string }) =>
 export const signOut = () => store.getState().signOut();
 export const clearAuthTokens = () => store.getState().clearTokens();
 export const hydrateAuthTokens = () => store.getState().hydrateAuthTokens();
+export { useAuthStore };

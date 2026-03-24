@@ -23,6 +23,7 @@ interface AccountFeedProps {
 }
 
 const EMPTY_MESSAGES: Record<AccountFeedType, string> = {
+  [AccountFeedType.Collaborations]: "has no collaborations yet!",
   [AccountFeedType.FanDrops]: "has no FanDrops yet!",
   [AccountFeedType.Feed]: "has nothing in their feed yet!",
   [AccountFeedType.Media]: "has no media yet!",
