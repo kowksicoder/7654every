@@ -6,6 +6,18 @@ import { createRoot } from "react-dom/client";
 import Providers from "@/components/Common/Providers";
 import Routes from "./routes";
 
+const analyticsGlobal = globalThis as typeof globalThis & {
+  umami?: {
+    track: (event: string, data?: Record<string, unknown>) => void;
+  };
+};
+
+if (typeof analyticsGlobal.umami === "undefined") {
+  analyticsGlobal.umami = {
+    track: () => undefined
+  };
+}
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     void navigator.serviceWorker
