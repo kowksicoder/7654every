@@ -21,60 +21,6 @@ const pushRuntime = createPushRuntime({ rootDir: __dirname });
 const verificationRuntime = createVerificationRuntime({ rootDir: __dirname });
 
 export default defineConfig({
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes("node_modules")) {
-            return;
-          }
-
-          if (id.includes("@zoralabs")) {
-            return "zora";
-          }
-
-          if (id.includes("@privy-io")) {
-            return "privy";
-          }
-
-          if (
-            id.includes("/viem/") ||
-            id.includes("/wagmi/") ||
-            id.includes("@walletconnect") ||
-            id.includes("@reown")
-          ) {
-            return "wallet";
-          }
-
-          if (id.includes("@apollo") || id.includes("/graphql/")) {
-            return "apollo";
-          }
-
-          if (id.includes("@tanstack")) {
-            return "tanstack";
-          }
-
-          if (
-            id.includes("@headlessui") ||
-            id.includes("@heroicons") ||
-            id.includes("framer-motion")
-          ) {
-            return "ui";
-          }
-
-          if (
-            id.includes("/react/") ||
-            id.includes("/react-dom/") ||
-            id.includes("scheduler")
-          ) {
-            return "react-vendor";
-          }
-
-          return "vendor";
-        }
-      }
-    }
-  },
   plugins: [
     tsconfigPaths(),
     react(),
