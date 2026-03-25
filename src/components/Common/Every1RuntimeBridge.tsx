@@ -128,6 +128,7 @@ const Every1RuntimeBridge = () => {
   const queryClient = useQueryClient();
   const { currentAccount } = useAccountStore();
   const {
+    setPendingProductTourProfileId,
     lastToastNotificationId,
     pendingReferralCode,
     profile,
@@ -200,6 +201,7 @@ const Every1RuntimeBridge = () => {
 
     if (!currentAccount) {
       hasSyncedProfile.current = false;
+      setPendingProductTourProfileId(null);
       setProfile(null);
       setSignupCelebrationProfileId(null);
       return;
@@ -233,6 +235,7 @@ const Every1RuntimeBridge = () => {
         );
 
         if (didProfileExistBeforeSync === false) {
+          setPendingProductTourProfileId(syncedProfile.id);
           setSignupCelebrationProfileId(syncedProfile.id);
         }
       } catch (error) {
@@ -249,6 +252,7 @@ const Every1RuntimeBridge = () => {
     currentAccount,
     hasConfiguredSupabase,
     queryClient,
+    setPendingProductTourProfileId,
     setProfile,
     setSignupCelebrationProfileId
   ]);

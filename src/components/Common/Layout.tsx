@@ -24,6 +24,7 @@ import { useAccountStore } from "@/store/persisted/useAccountStore";
 import { useEvery1Store } from "@/store/persisted/useEvery1Store";
 import { useHomeTabStore } from "@/store/persisted/useHomeTabStore";
 import Every1RuntimeBridge from "./Every1RuntimeBridge";
+import ProductTourModal from "./ProductTourModal";
 import ReloadTabsWatcher from "./ReloadTabsWatcher";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -39,8 +40,13 @@ const Layout = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const { currentAccount, setCurrentAccount } = useAccountStore();
-  const { clearSignupCelebration, profile, signupCelebrationProfileId } =
-    useEvery1Store();
+  const {
+    clearPendingProductTour,
+    clearSignupCelebration,
+    pendingProductTourProfileId,
+    profile,
+    signupCelebrationProfileId
+  } = useEvery1Store();
   const { viewMode } = useHomeTabStore();
   const isMounted = useIsClient();
   const [deferredInstallPrompt, setDeferredInstallPrompt] =
@@ -183,6 +189,10 @@ const Layout = () => {
     navigate("/create");
   };
 
+  const handleCloseProductTour = () => {
+    clearPendingProductTour();
+  };
+
   const handleAddToHome = async () => {
     if (!deferredInstallPrompt) {
       return;
@@ -260,6 +270,16 @@ const Layout = () => {
         show={Boolean(signupCelebrationProfileId)}
         title={`Welcome${profile?.displayName ? `, ${profile.displayName}` : ""}`}
         tone="success"
+      />
+      <ProductTourModal
+        onClose={handleCloseProductTour}
+        onLaunchCoin={() => {
+          clearPendingProductTour();
+          navigate("/create");
+        }}
+        show={
+          Boolean(pendingProductTourProfileId) && !signupCelebrationProfileId
+        }
       />
       {hideMobileHeader ? null : <MobileHeader />}
       <div
