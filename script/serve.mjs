@@ -17,6 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
 const distDir = path.join(rootDir, "dist");
+const publicDir = path.join(rootDir, "public");
 const indexHtmlPath = path.join(distDir, "index.html");
 const collaborationRuntime = createCollaborationRuntime({ rootDir });
 const fanDropRuntime = createFanDropRuntime({ rootDir });
@@ -1051,11 +1052,17 @@ const serve = async () => {
       const pathname = decodeURIComponent(requestUrl.pathname);
       const relativeFilePath = pathname.replace(/^\/+/, "");
       const filePath = path.resolve(distDir, relativeFilePath);
+      const publicFilePath = path.resolve(publicDir, relativeFilePath);
       const relativeFromDist = path.relative(distDir, filePath);
+      const relativeFromPublic = path.relative(publicDir, publicFilePath);
       const isInsideDist =
         Boolean(relativeFromDist) &&
         !relativeFromDist.startsWith("..") &&
         !path.isAbsolute(relativeFromDist);
+      const isInsidePublic =
+        Boolean(relativeFromPublic) &&
+        !relativeFromPublic.startsWith("..") &&
+        !path.isAbsolute(relativeFromPublic);
 
       if (
         pathname !== "/" &&
@@ -1064,6 +1071,16 @@ const serve = async () => {
         Boolean(path.extname(filePath))
       ) {
         sendFile(request, response, filePath);
+        return;
+      }
+
+      if (
+        pathname !== "/" &&
+        isInsidePublic &&
+        existsSync(publicFilePath) &&
+        Boolean(path.extname(publicFilePath))
+      ) {
+        sendFile(request, response, publicFilePath);
         return;
       }
 
