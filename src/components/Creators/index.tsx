@@ -131,13 +131,14 @@ const MobileCreatorCard = ({ creator }: { creator: FeaturedCreatorEntry }) => {
 const CreatorRow = ({ creator }: { creator: FeaturedCreatorEntry }) => {
   const positive = isPositiveDelta(creator.marketCapDelta24h);
   const ticker = getCreatorTicker(creator.symbol);
+  const earningsValue = formatUsdMetric(creator.creatorEarningsUsd ?? 0);
 
   return (
     <Card
       className="mx-5 px-4 py-4 shadow-none transition-colors hover:border-gray-300 hover:bg-gray-50/60 md:mx-0 md:px-5 dark:hover:border-gray-600 dark:hover:bg-gray-950/60"
       forceRounded
     >
-      <div className="grid gap-4 md:grid-cols-[minmax(0,2.5fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.9fr)_minmax(0,0.65fr)_minmax(0,0.8fr)] md:items-center">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,2.4fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.8fr)_minmax(0,0.65fr)_minmax(0,0.8fr)] md:items-center">
         <div className="flex items-center gap-3">
           <Image
             alt={creator.name}
@@ -190,6 +191,15 @@ const CreatorRow = ({ creator }: { creator: FeaturedCreatorEntry }) => {
           </p>
           <p className="font-semibold text-base text-gray-950 dark:text-gray-50">
             {formatCompactMetric(creator.uniqueHolders)}
+          </p>
+        </div>
+
+        <div>
+          <p className="font-semibold text-[11px] text-gray-500 uppercase tracking-[0.18em] md:hidden">
+            Earnings
+          </p>
+          <p className="font-semibold text-base text-gray-950 dark:text-gray-50">
+            {earningsValue}
           </p>
         </div>
 
@@ -394,11 +404,12 @@ const Creators = () => {
           ) : null}
 
           {!error && !isLoading ? (
-            <div className="hidden px-4 font-semibold text-gray-500 text-xs uppercase tracking-[0.18em] md:grid md:grid-cols-[minmax(0,2.5fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.9fr)_minmax(0,0.65fr)_minmax(0,0.8fr)] md:items-center md:px-5">
+            <div className="hidden px-4 font-semibold text-gray-500 text-xs uppercase tracking-[0.18em] md:grid md:grid-cols-[minmax(0,2.4fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.8fr)_minmax(0,0.65fr)_minmax(0,0.8fr)] md:items-center md:px-5">
               <span>Creator</span>
               <span>Market cap</span>
               <span>24h vol</span>
               <span>Holders</span>
+              <span>Earnings</span>
               <span>Age</span>
               <span>24h</span>
             </div>
@@ -419,8 +430,9 @@ const Creators = () => {
                     forceRounded
                     key={index.toString()}
                   >
-                    <div className="grid animate-pulse gap-4 md:grid-cols-[minmax(0,2.5fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.9fr)_minmax(0,0.65fr)_minmax(0,0.8fr)]">
+                    <div className="grid animate-pulse gap-4 md:grid-cols-[minmax(0,2.4fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.8fr)_minmax(0,0.65fr)_minmax(0,0.8fr)]">
                       <div className="h-10 rounded-full bg-gray-200 dark:bg-white/10" />
+                      <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />
                       <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />
                       <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />
                       <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />

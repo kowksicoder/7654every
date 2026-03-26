@@ -137,7 +137,7 @@ const MobileLeaderboardCard = ({
           value={formatCompactMetric(entry.weekTradesCount)}
         />
         <MetricCard
-          label="ZORA"
+          label="Holdings"
           value={formatCompactMetric(entry.grossVolumeZora)}
         />
         <MetricCard label="E1XP" value={formatCompactMetric(entry.e1xpTotal)} />
@@ -288,7 +288,7 @@ const Leaderboard = () => {
         valueClassName: "text-gray-900 dark:text-white"
       },
       {
-        label: "Gross ZORA",
+        label: "Holdings",
         value: formatCompactMetric(totalZora),
         valueClassName: "text-[#26dd86]"
       }
@@ -407,7 +407,7 @@ const Leaderboard = () => {
               <span className="text-center">Score</span>
               <span className="text-center">Week Vol</span>
               <span className="text-center">Trades</span>
-              <span className="text-center">Gross ZORA</span>
+              <span className="text-center">Holdings</span>
               <span className="text-center">E1XP</span>
             </div>
           ) : null}

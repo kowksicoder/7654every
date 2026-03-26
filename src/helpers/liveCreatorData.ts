@@ -206,6 +206,52 @@ const buildOrderedCreatorEntries = (
   return orderedEntries;
 };
 
+const applyCreatorCampaignData = async (
+  entries: FeaturedCreatorEntry[]
+): Promise<FeaturedCreatorEntry[]> => {
+  if (!hasSupabaseConfig() || !entries.length) {
+    return entries;
+  }
+
+  const campaign = await getPublicCreatorOfWeekCampaign().catch(() => null);
+
+  if (!campaign) {
+    return entries;
+  }
+
+  const normalizedCampaignWallet = campaign.walletAddress?.trim().toLowerCase();
+  const normalizedCampaignHandle = (
+    campaign.username ||
+    campaign.zoraHandle ||
+    ""
+  )
+    .trim()
+    .replace(/^@/, "")
+    .toLowerCase();
+
+  return entries.map((entry) => {
+    const normalizedEntryWallet = entry.creatorWalletAddress?.toLowerCase();
+    const normalizedEntryHandle = entry.handle.replace(/^@/, "").toLowerCase();
+    const matchesCampaign =
+      (normalizedCampaignWallet &&
+        normalizedEntryWallet === normalizedCampaignWallet) ||
+      (normalizedCampaignHandle &&
+        normalizedEntryHandle === normalizedCampaignHandle);
+
+    if (!matchesCampaign) {
+      return entry;
+    }
+
+    return {
+      ...entry,
+      category: campaign.category || entry.category,
+      creatorEarningsUsd:
+        campaign.creatorEarningsUsd ?? entry.creatorEarningsUsd ?? 0,
+      featuredPriceUsd: campaign.featuredPriceUsd ?? entry.featuredPriceUsd
+    };
+  });
+};
+
 const buildPlatformFeaturedCreatorEntry = async (
   launch: Awaited<ReturnType<typeof listPublicPlatformLaunches>>[number]
 ): Promise<FeaturedCreatorEntry> => {
@@ -426,40 +472,49 @@ export const fetchFeaturedCreatorEntries = async (
   let zoraEntries: FeaturedCreatorEntry[] = [];
 
   if (zoraApiKey) {
-    const featuredResponse = await getFeaturedCreators({ first: count });
-    const featuredNodes =
-      featuredResponse.data?.traderLeaderboardFeaturedCreators?.edges?.map(
-        (edge) => edge.node
-      ) ?? [];
+    try {
+      const featuredResponse = await getFeaturedCreators({ first: count });
+      const featuredNodes =
+        featuredResponse.data?.traderLeaderboardFeaturedCreators?.edges?.map(
+          (edge) => edge.node
+        ) ?? [];
 
-    const uniqueHandles = Array.from(
-      new Set(
-        featuredNodes
-          .map((node: FeaturedCreatorNode) => node.handle?.trim())
-          .filter(Boolean)
-      )
-    );
-    const identifiers = Array.from(
-      new Set([...manualFeaturedIdentifiers, ...uniqueHandles])
-    );
-    const entries = await Promise.all(
-      identifiers.map((identifier) => buildFeaturedCreatorEntry(identifier))
-    );
+      const uniqueHandles = Array.from(
+        new Set(
+          featuredNodes
+            .map((node: FeaturedCreatorNode) => node.handle?.trim())
+            .filter(Boolean)
+        )
+      );
+      const identifiers = Array.from(
+        new Set([...manualFeaturedIdentifiers, ...uniqueHandles])
+      );
+      const entries = await Promise.all(
+        identifiers.map((identifier) => buildFeaturedCreatorEntry(identifier))
+      );
 
-    zoraEntries = entries.filter(
-      (entry): entry is FeaturedCreatorEntry =>
-        entry !== null &&
-        !hiddenWallets.has((entry.creatorWalletAddress || "").toLowerCase()) &&
-        !hiddenHandles.has(entry.handle.replace(/^@/, "").toLowerCase())
-    );
+      zoraEntries = entries.filter(
+        (entry): entry is FeaturedCreatorEntry =>
+          entry !== null &&
+          !hiddenWallets.has(
+            (entry.creatorWalletAddress || "").toLowerCase()
+          ) &&
+          !hiddenHandles.has(entry.handle.replace(/^@/, "").toLowerCase())
+      );
+    } catch {
+      zoraEntries = [];
+    }
   }
 
   const mergedEntries = buildOrderedCreatorEntries(
     [...platformEntries, ...zoraEntries],
     manualFeaturedIdentifiers
   );
+  const campaignAwareEntries = await applyCreatorCampaignData(
+    mergedEntries.slice(0, count)
+  );
 
-  return withOfficialCreatorFlags(mergedEntries.slice(0, count));
+  return withOfficialCreatorFlags(campaignAwareEntries);
 };
 
 export const fetchCreatorOfWeekEntry =
