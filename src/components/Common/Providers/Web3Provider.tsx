@@ -4,11 +4,13 @@ import type { ReactNode } from "react";
 import { http } from "viem";
 import { base } from "viem/chains";
 import { BASE_RPC_URL, BRAND_COLOR, CHAIN } from "@/data/constants";
+import { BASE_BUILDER_DATA_SUFFIX } from "@/helpers/builderCode";
 import getRpc from "@/helpers/getRpc";
 import { hasPrivyConfig } from "@/helpers/privy";
 
 const config = createConfig({
   chains: [CHAIN, base],
+  dataSuffix: BASE_BUILDER_DATA_SUFFIX,
   transports: {
     [CHAIN.id]: getRpc(),
     [base.id]: http(BASE_RPC_URL, { batch: { batchSize: 30 } })
