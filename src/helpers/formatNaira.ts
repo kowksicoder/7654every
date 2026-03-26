@@ -1,0 +1,23 @@
+export const NAIRA_SYMBOL = "₦";
+
+type FormatNairaOptions = {
+  maximumFractionDigits?: number;
+  minimumFractionDigits?: number;
+};
+
+export const formatNaira = (
+  value: number,
+  options: FormatNairaOptions = {}
+) => {
+  const safeValue = Number.isFinite(value) && value > 0 ? value : 0;
+
+  const maximumFractionDigits =
+    options.maximumFractionDigits ?? (safeValue >= 100 ? 0 : 2);
+
+  const formatted = new Intl.NumberFormat("en-NG", {
+    maximumFractionDigits,
+    minimumFractionDigits: options.minimumFractionDigits ?? 0
+  }).format(safeValue);
+
+  return `${NAIRA_SYMBOL}${formatted}`;
+};

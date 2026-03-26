@@ -12,17 +12,10 @@ import {
   initiateFiatDeposit,
   withdrawFiat
 } from "@/helpers/fiat";
+import { formatNaira } from "@/helpers/formatNaira";
 import { getPrivyDisplayName } from "@/helpers/privy";
 import { useAccountStore } from "@/store/persisted/useAccountStore";
 import { useEvery1Store } from "@/store/persisted/useEvery1Store";
-
-const formatNaira = (value: number) =>
-  new Intl.NumberFormat("en-NG", {
-    currency: "NGN",
-    currencyDisplay: "narrowSymbol",
-    maximumFractionDigits: 0,
-    style: "currency"
-  }).format(Math.max(0, value || 0));
 
 const formatRelativeDate = (value?: null | string) => {
   if (!value) {

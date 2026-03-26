@@ -54,6 +54,7 @@ import {
   createFiatIdempotencyKey,
   normalizeFiatUiError
 } from "@/helpers/fiatUi";
+import { formatNaira, NAIRA_SYMBOL } from "@/helpers/formatNaira";
 import useHandleWrongNetwork from "@/hooks/useHandleWrongNetwork";
 import { useEvery1Store } from "@/store/persisted/useEvery1Store";
 
@@ -260,12 +261,7 @@ const Trade = ({
           summary: `You'll receive approximately ${quote.estimated_coin_amount.toLocaleString(
             "en-US",
             { maximumFractionDigits: 2 }
-          )} ${symbol || "TOKEN"} after ${new Intl.NumberFormat("en-NG", {
-            currency: "NGN",
-            currencyDisplay: "narrowSymbol",
-            maximumFractionDigits: 0,
-            style: "currency"
-          }).format(quote.fee_naira)} in fees.`
+          )} ${symbol || "TOKEN"} after ${formatNaira(quote.fee_naira)} in fees.`
         });
       } else {
         const quote = await getSellQuote({
@@ -278,12 +274,7 @@ const Trade = ({
         });
 
         setFiatQuote({
-          amountLabel: new Intl.NumberFormat("en-NG", {
-            currency: "NGN",
-            currencyDisplay: "narrowSymbol",
-            maximumFractionDigits: 0,
-            style: "currency"
-          }).format(quote.estimated_naira_return),
+          amountLabel: formatNaira(quote.estimated_naira_return),
           expiresAt: quote.expires_at,
           quoteId: quote.quote_id,
           settlement: {
@@ -291,23 +282,9 @@ const Trade = ({
             transferAmountLabel: quote.settlement.transfer_amount_label,
             transferAmountRaw: quote.settlement.transfer_amount_raw
           },
-          summary: `You'll receive approximately ${new Intl.NumberFormat(
-            "en-NG",
-            {
-              currency: "NGN",
-              currencyDisplay: "narrowSymbol",
-              maximumFractionDigits: 0,
-              style: "currency"
-            }
-          ).format(quote.estimated_naira_return)} after ${new Intl.NumberFormat(
-            "en-NG",
-            {
-              currency: "NGN",
-              currencyDisplay: "narrowSymbol",
-              maximumFractionDigits: 0,
-              style: "currency"
-            }
-          ).format(
+          summary: `You'll receive approximately ${formatNaira(
+            quote.estimated_naira_return
+          )} after ${formatNaira(
             quote.fee_naira
           )} in fees after you confirm the secure wallet transfer.`
         });
@@ -655,10 +632,10 @@ const Trade = ({
   const quickTradeOptions = isFiatRail
     ? mode === "buy"
       ? [
-          { label: "N500", onClick: () => setAmount("500") },
-          { label: "N1k", onClick: () => setAmount("1000") },
-          { label: "N5k", onClick: () => setAmount("5000") },
-          { label: "N10k", onClick: () => setAmount("10000") }
+          { label: "₦500", onClick: () => setAmount("500") },
+          { label: "₦1k", onClick: () => setAmount("1000") },
+          { label: "₦5k", onClick: () => setAmount("5000") },
+          { label: "₦10k", onClick: () => setAmount("10000") }
         ]
       : [
           { label: "25%", onClick: () => setPercentAmount(25) },
@@ -683,10 +660,10 @@ const Trade = ({
   const mobileQuickTradeOptions = isFiatRail
     ? mode === "buy"
       ? [
-          { label: "N500", onClick: () => setAmount("500") },
-          { label: "N1k", onClick: () => setAmount("1000") },
-          { label: "N2.5k", onClick: () => setAmount("2500") },
-          { label: "N5k", onClick: () => setAmount("5000") }
+          { label: "₦500", onClick: () => setAmount("500") },
+          { label: "₦1k", onClick: () => setAmount("1000") },
+          { label: "₦2.5k", onClick: () => setAmount("2500") },
+          { label: "₦5k", onClick: () => setAmount("5000") }
         ]
       : [
           { label: "10%", onClick: () => setPercentAmount(10) },
@@ -706,14 +683,6 @@ const Trade = ({
       maximumFractionDigits,
       minimumFractionDigits: 0
     }).format(value);
-
-  const formatNaira = (value: number) =>
-    new Intl.NumberFormat("en-NG", {
-      currency: "NGN",
-      currencyDisplay: "narrowSymbol",
-      maximumFractionDigits: 0,
-      style: "currency"
-    }).format(Math.max(0, value));
 
   const tradeInputLabel = useMemo(() => {
     const parsedAmount = Number.parseFloat(amount || "0");
@@ -819,7 +788,7 @@ const Trade = ({
     ? fiatQuoteError ||
       fiatQuote?.summary ||
       (mode === "buy"
-        ? "Enter a Naira amount, get a secure quote, then confirm your buy trade."
+        ? "Enter a ₦ amount, get a secure quote, then confirm your buy trade."
         : `Enter how much ${symbol || "token"} you want to sell into Naira.`)
     : `Estimated amount: ${
         estimatedOut
@@ -927,7 +896,8 @@ const Trade = ({
                     {coin.name}
                   </p>
                   <p className="truncate text-[10px] text-gray-500 dark:text-white/55">
-                    {symbol || "COIN"} ·{" "}
+                    {symbol || "COIN"}
+                    {" | "}
                     {isFiatRail
                       ? mode === "buy"
                         ? "Buy with Naira"
@@ -977,7 +947,7 @@ const Trade = ({
               <p className="font-semibold text-[2.8rem] text-gray-950 leading-none tracking-tight dark:text-white">
                 {mode === "buy"
                   ? isFiatRail
-                    ? `NGN ${displayAmount}`
+                    ? `${NAIRA_SYMBOL}${displayAmount}`
                     : `$${displayAmount}`
                   : displayAmount}
               </p>
@@ -998,7 +968,7 @@ const Trade = ({
                   />
                 ) : isFiatRail ? (
                   <span className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-1.5 py-0.5 font-semibold text-[9px] text-white">
-                    NGN
+                    {NAIRA_SYMBOL}
                   </span>
                 ) : (
                   <span className="inline-flex items-center justify-center rounded-full bg-gray-900 px-1.5 py-0.5 font-semibold text-[9px] text-white dark:bg-white/85 dark:text-[#111111]">
@@ -1157,7 +1127,7 @@ const Trade = ({
 
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2 py-1.25 font-semibold text-[11px] text-gray-950 dark:border-gray-700 dark:bg-black dark:text-gray-50">
                   {mode === "buy" ? (
-                    <span>{isFiatRail ? "NGN" : "ETH"}</span>
+                    <span>{isFiatRail ? NAIRA_SYMBOL : "ETH"}</span>
                   ) : (
                     <>
                       <Image
@@ -1279,7 +1249,7 @@ const Trade = ({
             prefix={
               mode === "buy" ? (
                 isFiatRail ? (
-                  "NGN"
+                  NAIRA_SYMBOL
                 ) : (
                   "ETH"
                 )

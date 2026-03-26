@@ -55,6 +55,7 @@ import {
   createFiatIdempotencyKey,
   normalizeFiatUiError
 } from "@/helpers/fiatUi";
+import { formatNaira, NAIRA_SYMBOL } from "@/helpers/formatNaira";
 import getZoraApiKey from "@/helpers/getZoraApiKey";
 import {
   formatCompactMetric,
@@ -303,12 +304,9 @@ const formatCompact = (value: number) =>
   }).format(value);
 
 const formatNgn = (value: number) =>
-  new Intl.NumberFormat("en-NG", {
-    currency: "NGN",
-    currencyDisplay: "narrowSymbol",
-    maximumFractionDigits: value >= 100 ? 0 : 2,
-    style: "currency"
-  }).format(Math.max(0, value));
+  formatNaira(value, {
+    maximumFractionDigits: value >= 100 ? 0 : 2
+  });
 
 const formatSwapAmount = (value: number, maxFractionDigits = 6) =>
   new Intl.NumberFormat("en-US", {
@@ -798,7 +796,8 @@ const Swap = () => {
         : "0 ETH"
       : `0 ${activeCoin.symbol}`;
   const tradeOutputLabel = isFiatRail
-    ? fiatQuote?.amountLabel || (fromIsEth ? `0 ${activeCoin.symbol}` : "NGN 0")
+    ? fiatQuote?.amountLabel ||
+      (fromIsEth ? `0 ${activeCoin.symbol}` : formatNgn(0))
     : receiveAmount > 0
       ? fromIsEth
         ? `${formatSwapAmount(receiveAmount, 2)} ${activeCoin.symbol}`
@@ -812,10 +811,10 @@ const Swap = () => {
       ? `${tradeInputLabel} -> ${tradeOutputLabel}`
       : fromIsEth
         ? isFiatRail
-          ? `NGN to ${activeCoin.symbol}`
+          ? `${NAIRA_SYMBOL} to ${activeCoin.symbol}`
           : `ETH to ${activeCoin.symbol}`
         : isFiatRail
-          ? `${activeCoin.symbol} to NGN`
+          ? `${activeCoin.symbol} to ${NAIRA_SYMBOL}`
           : `${activeCoin.symbol} to ETH`;
   const canSubmit = isFiatRail
     ? Boolean(
@@ -1218,9 +1217,9 @@ const Swap = () => {
                 : "bg-[#ece7ff] text-[#6d28d9] dark:bg-black/25 dark:text-white"
             )}
           >
-            {isFiatRail ? "NGN" : "ETH"}
+            {isFiatRail ? NAIRA_SYMBOL : "ETH"}
           </span>
-          {isFiatRail ? "NGN" : "ETH"}
+          {isFiatRail ? NAIRA_SYMBOL : "ETH"}
         </div>
       );
     }
@@ -1266,9 +1265,9 @@ const Swap = () => {
                 : "bg-[#d9cffc] text-[#3b2a6d] dark:bg-[#4a3f73] dark:text-white"
             )}
           >
-            {isFiatRail ? "NGN" : "ETH"}
+            {isFiatRail ? NAIRA_SYMBOL : "ETH"}
           </span>
-          {isFiatRail ? "NGN" : "ETH"}
+          {isFiatRail ? NAIRA_SYMBOL : "ETH"}
         </div>
       );
     }

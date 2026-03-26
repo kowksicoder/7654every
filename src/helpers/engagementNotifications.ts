@@ -1,3 +1,4 @@
+import { formatNaira } from "@/helpers/formatNaira";
 import type { Every1Notification, Every1Profile } from "@/types/every1";
 
 const hashString = (value: string) => {
@@ -20,15 +21,7 @@ const mulberry32 = (seed: number) => {
   };
 };
 
-const formatNaira = (value: number) =>
-  new Intl.NumberFormat("en-NG", {
-    currency: "NGN",
-    currencyDisplay: "narrowSymbol",
-    maximumFractionDigits: 0,
-    style: "currency"
-  }).format(value);
-
-const pick = <T,>(items: T[], rand: () => number) =>
+const pick = <T>(items: T[], rand: () => number) =>
   items[Math.floor(rand() * items.length)] || items[0];
 
 const buildAmount = (rand: () => number, values: number[]) =>
