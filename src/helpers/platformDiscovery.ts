@@ -1,15 +1,12 @@
-import { type GetCoinResponse, getCoin, setApiKey } from "@zoralabs/coins-sdk";
 import { DEFAULT_AVATAR } from "@/data/constants";
 import getZoraApiKey from "@/helpers/getZoraApiKey";
 import { normalizePlatformLaunchCategory } from "@/helpers/platformCategories";
 import { getPublicExploreCoinOverrides } from "@/helpers/staff";
 import { getSupabaseClient } from "@/helpers/supabase";
-
-const zoraApiKey = getZoraApiKey();
-
-if (zoraApiKey) {
-  setApiKey(zoraApiKey);
-}
+import type { Address } from "viem";
+import { isAddress } from "viem";
+import { base } from "viem/chains";
+import { type GetCoinResponse, getCoin, setApiKey } from "@zoralabs/coins-sdk";
 
 type LaunchProfileRow = {
   avatar_url: null | string;
@@ -58,8 +55,10 @@ export type PublicPlatformLaunch = {
 
 export type PlatformDiscoverCoin = {
   address: string;
+  category?: null | string;
   createdAt: string;
   creatorAddress: null | string;
+  creatorDisplayName?: null | string;
   creatorProfile: {
     avatar?: {
       previewImage?: {
@@ -72,13 +71,17 @@ export type PlatformDiscoverCoin = {
   } | null;
   description?: null | string;
   id: string;
+  isPlatformCreated?: boolean;
   marketCap?: null | string;
   marketCapDelta24h?: null | string;
   mediaContent?: {
+    mimeType?: null | string;
     previewImage?: {
       medium?: null | string;
       small?: null | string;
     };
+    videoHlsUrl?: null | string;
+    videoPreviewUrl?: null | string;
   } | null;
   name: string;
   platformBlocked?: boolean;
@@ -90,6 +93,14 @@ export type PlatformDiscoverCoin = {
   uniqueHolders?: null | number;
   volume24h?: null | string;
 };
+
+type ZoraCoin = NonNullable<GetCoinResponse["zora20Token"]>;
+
+const zoraApiKey = getZoraApiKey();
+
+if (zoraApiKey) {
+  setApiKey(zoraApiKey);
+}
 
 const toPreviewImage = (value?: null | string) =>
   value
@@ -103,8 +114,10 @@ const buildFallbackCoin = (
   launch: PublicPlatformLaunch
 ): PlatformDiscoverCoin => ({
   address: launch.coinAddress,
+  category: launch.category,
   createdAt: launch.launchedAt,
   creatorAddress: launch.creator.walletAddress,
+  creatorDisplayName: launch.creator.displayName,
   creatorProfile: {
     avatar: {
       previewImage: toPreviewImage(
@@ -116,6 +129,7 @@ const buildFallbackCoin = (
   },
   description: launch.description,
   id: launch.coinAddress,
+  isPlatformCreated: true,
   marketCap: "0",
   marketCapDelta24h: "0",
   mediaContent: {
@@ -134,56 +148,60 @@ const buildFallbackCoin = (
   volume24h: "0"
 });
 
-const mergeWithCoinData = (
+const buildPlatformCoin = (
   launch: PublicPlatformLaunch,
-  coin: NonNullable<GetCoinResponse["zora20Token"]>
+  zoraCoin: ZoraCoin | null
 ): PlatformDiscoverCoin => {
   const fallback = buildFallbackCoin(launch);
 
+  if (!zoraCoin) {
+    return fallback;
+  }
+
   return {
     ...fallback,
-    ...coin,
-    address: coin.address,
-    createdAt: coin.createdAt || fallback.createdAt,
-    creatorAddress: coin.creatorAddress || fallback.creatorAddress,
-    creatorProfile: {
-      avatar: {
-        previewImage: {
-          medium:
-            coin.creatorProfile?.avatar?.previewImage?.medium ||
-            launch.creator.avatarUrl ||
-            launch.coverImageUrl ||
-            DEFAULT_AVATAR,
-          small:
-            coin.creatorProfile?.avatar?.previewImage?.small ||
-            coin.creatorProfile?.avatar?.previewImage?.medium ||
-            launch.creator.avatarUrl ||
-            launch.coverImageUrl ||
-            DEFAULT_AVATAR
-        }
-      },
-      handle: coin.creatorProfile?.handle || launch.creator.username,
-      platformBlocked: coin.creatorProfile?.platformBlocked
-    },
-    id: coin.address,
-    mediaContent: {
-      previewImage: {
-        medium:
-          coin.mediaContent?.previewImage?.medium ||
-          launch.coverImageUrl ||
-          fallback.mediaContent?.previewImage?.medium ||
-          DEFAULT_AVATAR,
-        small:
-          coin.mediaContent?.previewImage?.small ||
-          coin.mediaContent?.previewImage?.medium ||
-          launch.coverImageUrl ||
-          fallback.mediaContent?.previewImage?.small ||
-          DEFAULT_AVATAR
-      }
-    },
-    name: coin.name || fallback.name,
-    symbol: coin.symbol || fallback.symbol
+    creatorAddress: fallback.creatorAddress || zoraCoin.creatorAddress || null,
+    description: fallback.description ?? zoraCoin.description ?? null,
+    marketCap: zoraCoin.marketCap ?? fallback.marketCap,
+    marketCapDelta24h: zoraCoin.marketCapDelta24h ?? fallback.marketCapDelta24h,
+    name: fallback.name || zoraCoin.name || fallback.name,
+    symbol: fallback.symbol || zoraCoin.symbol || fallback.symbol,
+    tokenPrice: zoraCoin.tokenPrice ?? fallback.tokenPrice,
+    uniqueHolders: zoraCoin.uniqueHolders ?? fallback.uniqueHolders,
+    volume24h: zoraCoin.volume24h ?? fallback.volume24h
   };
+};
+
+const fetchZoraCoinLookup = async (addresses: string[]) => {
+  const entries = await Promise.all(
+    addresses.map(async (address) => {
+      if (!isAddress(address)) {
+        return null;
+      }
+
+      try {
+        const response = await getCoin({
+          address: address as Address,
+          chain: base.id
+        });
+        const coin = response.data?.zora20Token ?? null;
+
+        if (!coin) {
+          return null;
+        }
+
+        return [address.toLowerCase(), coin] as const;
+      } catch {
+        return null;
+      }
+    })
+  );
+
+  return new Map<string, ZoraCoin>(
+    entries.filter((entry): entry is readonly [string, ZoraCoin] =>
+      Boolean(entry)
+    )
+  );
 };
 
 export const listPublicPlatformLaunches = async (input?: {
@@ -301,37 +319,18 @@ export const fetchPlatformDiscoverCoins = async (input?: {
   offset?: number;
 }) => {
   const launches = await listPublicPlatformLaunches(input);
-  const hydratedCoins = await Promise.all(
-    launches.map(async (launch) => {
-      const fallback = buildFallbackCoin(launch);
 
-      try {
-        if (!zoraApiKey) {
-          return fallback;
-        }
+  if (!launches.length) {
+    return [];
+  }
 
-        const response = await getCoin({
-          address: launch.coinAddress as `0x${string}`,
-          chain: 8453
-        });
-        const coin = response.data?.zora20Token;
-
-        if (
-          !coin ||
-          coin.platformBlocked ||
-          coin.creatorProfile?.platformBlocked
-        ) {
-          return fallback;
-        }
-
-        return mergeWithCoinData(launch, coin);
-      } catch {
-        return fallback;
-      }
-    })
+  const zoraCoinLookup = await fetchZoraCoinLookup(
+    launches.map((launch) => launch.coinAddress)
   );
 
-  return hydratedCoins;
+  return launches.map((launch) =>
+    buildPlatformCoin(launch, zoraCoinLookup.get(launch.coinAddress) || null)
+  );
 };
 
 export const mergePriorityItemsByAddress = <TItem extends { address: string }>(

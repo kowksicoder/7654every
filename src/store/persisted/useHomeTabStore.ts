@@ -13,7 +13,7 @@ interface State {
 
 const { useStore: useHomeTabStore } = createPersistedTrackedStore<State>(
   (set) => ({
-    feedType: HomeFeedType.FOLLOWING,
+    feedType: HomeFeedType.ALL,
     setFeedType: (feedType) => set(() => ({ feedType })),
     setSortMode: (sortMode) => set(() => ({ sortMode })),
     sortMode: HomeFeedSort.LATEST,

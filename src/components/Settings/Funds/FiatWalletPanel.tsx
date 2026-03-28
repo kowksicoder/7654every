@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { isAddress } from "viem";
 import Loader from "@/components/Shared/Loader";
 import { Button, ErrorMessage, Modal } from "@/components/Shared/UI";
+import { logActionError } from "@/helpers/actionErrorLogger";
 import { getExecutionWalletStatus } from "@/helpers/executionWallet";
 import {
   getFiatWallet,
@@ -138,6 +139,12 @@ const FiatWalletPanel = () => {
         ...getAuthenticatedRequestContext()
       }),
     onError: (error) => {
+      logActionError("wallet.deposit", error, {
+        amountNaira: Number(depositAmount),
+        hasEmail: Boolean(depositEmail.trim()),
+        profileId: profile?.id || null,
+        walletAddress
+      });
       toast.error(
         error instanceof Error
           ? error.message
@@ -174,6 +181,14 @@ const FiatWalletPanel = () => {
         ...getAuthenticatedRequestContext()
       }),
     onError: (error) => {
+      logActionError("wallet.withdraw", error, {
+        amountNaira: Number(withdrawAmount),
+        bankCode: selectedBankId ? null : bankCode.trim() || null,
+        hasAccountNumber: Boolean(accountNumber.trim()),
+        profileId: profile?.id || null,
+        selectedBankId,
+        walletAddress
+      });
       toast.error(
         error instanceof Error
           ? error.message

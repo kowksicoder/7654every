@@ -1,33 +1,12 @@
-import {
-  type ExploreResponse,
-  getCoinsLastTradedUnique,
-  getCoinsMostValuable,
-  getExploreNewAll,
-  getExploreTopVolumeAll24h,
-  setApiKey
-} from "@zoralabs/coins-sdk";
 import { DEFAULT_AVATAR } from "@/data/constants";
-import getZoraApiKey from "@/helpers/getZoraApiKey";
 import {
   fetchPlatformDiscoverCoins,
-  mergePriorityItemsByAddress,
   type PlatformDiscoverCoin
 } from "@/helpers/platformDiscovery";
 
-const zoraApiKey = getZoraApiKey();
-
-if (zoraApiKey) {
-  setApiKey(zoraApiKey);
-}
-
-type ExploreCoinNode = NonNullable<
-  NonNullable<
-    NonNullable<ExploreResponse["data"]>["exploreList"]
-  >["edges"][number]["node"]
->;
-
 export interface SearchDiscoverCoin {
   address: string;
+  createdAt?: string;
   creatorAddress?: null | string;
   creatorDisplayName?: null | string;
   creatorHandle?: null | string;
@@ -51,13 +30,20 @@ const parseMetric = (value?: null | number | string) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const parseCreatedAt = (value?: null | string) => {
+  const timestamp = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
 const mapCoin = (
-  item: ExploreCoinNode | PlatformDiscoverCoin,
+  item: PlatformDiscoverCoin,
   isPlatformCreated = false
 ): SearchDiscoverCoin => ({
   address: item.address,
+  createdAt: item.createdAt,
   creatorAddress: item.creatorAddress,
-  creatorDisplayName: item.creatorProfile?.handle || null,
+  creatorDisplayName:
+    item.creatorDisplayName || item.creatorProfile?.handle || null,
   creatorHandle: item.creatorProfile?.handle || null,
   imageUrl:
     item.mediaContent?.previewImage?.medium ||
@@ -166,57 +152,25 @@ const scoreCoin = (coin: SearchDiscoverCoin, normalizedQuery: string) => {
 };
 
 const fetchDiscoveryPools = async (count = 36) => {
-  const [platformCoins, ...responses] = await Promise.all([
-    fetchPlatformDiscoverCoins({
-      limit: Math.max(Math.min(count, 24), 12)
-    }).catch(() => [] as PlatformDiscoverCoin[]),
-    getExploreTopVolumeAll24h({ count }),
-    getExploreNewAll({ count }),
-    getCoinsLastTradedUnique({ count }),
-    getCoinsMostValuable({ count })
-  ]);
-  const zoraCoins = responses
-    .flatMap((response) => response.data?.exploreList?.edges ?? [])
-    .map((edge) => edge.node)
-    .filter(
-      (item): item is ExploreCoinNode =>
-        Boolean(item) &&
-        !item.platformBlocked &&
-        !item.creatorProfile?.platformBlocked
-    )
-    .map((item) => mapCoin(item));
+  const platformCoins = await fetchPlatformDiscoverCoins({
+    limit: Math.max(Math.min(count, 48), 12)
+  }).catch(() => [] as PlatformDiscoverCoin[]);
 
-  return mergePriorityItemsByAddress(
-    platformCoins.map((item) => mapCoin(item, true)),
-    zoraCoins
-  );
+  return platformCoins.map((item) => mapCoin(item, true));
 };
 
 export const fetchTrendingSearchCoins = async (limit = 3) => {
-  const [platformCoins, response] = await Promise.all([
-    fetchPlatformDiscoverCoins({
-      limit: Math.max(Math.min(limit * 2, 12), 6)
-    }).catch(() => [] as PlatformDiscoverCoin[]),
-    getExploreTopVolumeAll24h({
-      count: Math.max(limit, 6)
-    })
-  ]);
-  const items =
-    response.data?.exploreList?.edges
-      ?.map((edge) => edge.node)
-      .filter(
-        (item): item is ExploreCoinNode =>
-          Boolean(item) &&
-          !item.platformBlocked &&
-          !item.creatorProfile?.platformBlocked
-      )
-      .map((item) => mapCoin(item)) ?? [];
+  const platformCoins = await fetchPlatformDiscoverCoins({
+    limit: Math.max(Math.min(limit * 4, 16), 6)
+  }).catch(() => [] as PlatformDiscoverCoin[]);
 
   return dedupeCoins(
-    mergePriorityItemsByAddress(
-      platformCoins.map((item) => mapCoin(item, true)),
-      items
-    )
+    platformCoins
+      .map((item) => mapCoin(item, true))
+      .sort(
+        (left, right) =>
+          parseCreatedAt(right.createdAt) - parseCreatedAt(left.createdAt)
+      )
   ).slice(0, limit);
 };
 
@@ -244,9 +198,7 @@ export const searchDiscoverCoins = async (query: string, limit = 24) => {
       }
 
       return (
-        parseMetric(b.item.volume24h) +
-        parseMetric(b.item.marketCap) -
-        (parseMetric(a.item.volume24h) + parseMetric(a.item.marketCap))
+        parseCreatedAt(b.item.createdAt) - parseCreatedAt(a.item.createdAt)
       );
     })
     .map(({ item }) => item);

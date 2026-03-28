@@ -225,7 +225,41 @@ const useEvery1ExecutionWallet = ({
         executionWalletAddress: registeredExecutionWalletAddress,
         executionWalletClient: toViemWalletClient(
           smartWalletClient as ExecutionWalletClient | null
-        )
+        ),
+        smartWalletClient: smartWalletClient || null
+      };
+    }
+
+    const client = await loadSmartWalletClient();
+
+    if (!client) {
+      throw new Error("Unable to initialize your Every1 smart wallet.");
+    }
+
+    const nextExecutionWalletClient = toViemWalletClient(
+      client as ExecutionWalletClient
+    );
+    const nextExecutionWalletAddress = asAddress(client.account?.address);
+
+    return {
+      executionWalletAddress: asAddress(nextExecutionWalletAddress),
+      executionWalletClient: nextExecutionWalletClient,
+      smartWalletClient: client
+    };
+  }, [
+    loadSmartWalletClient,
+    registeredExecutionWalletAddress,
+    smartWalletClient
+  ]);
+
+  const linkExecutionWalletToProfile = useCallback(async () => {
+    if (!hasBaseSmartWalletConfig()) {
+      return {
+        executionWalletAddress: registeredExecutionWalletAddress,
+        executionWalletClient: toViemWalletClient(
+          smartWalletClient as ExecutionWalletClient | null
+        ),
+        smartWalletClient: smartWalletClient || null
       };
     }
 
@@ -242,7 +276,8 @@ const useEvery1ExecutionWallet = ({
 
     return {
       executionWalletAddress: asAddress(nextExecutionWalletAddress),
-      executionWalletClient: nextExecutionWalletClient
+      executionWalletClient: nextExecutionWalletClient,
+      smartWalletClient: client
     };
   }, [
     loadSmartWalletClient,
@@ -288,6 +323,7 @@ const useEvery1ExecutionWallet = ({
     identityWalletClient,
     isLinkingExecutionWallet: isLinking,
     isSmartWalletReady: Boolean(smartWalletClient && executionWalletAddress),
+    linkExecutionWalletToProfile,
     prepareExecutionWallet,
     smartWalletAddress,
     smartWalletClient,

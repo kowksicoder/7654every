@@ -50,6 +50,8 @@ export const getPlatformLaunchCategoryForFeedType = (
   feedType: HomeFeedType
 ): null | PlatformLaunchCategory => {
   switch (feedType) {
+    case HomeFeedType.ALL:
+      return null;
     case HomeFeedType.FOLLOWING:
       return "Music";
     case HomeFeedType.HIGHLIGHTS:

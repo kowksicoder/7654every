@@ -14,10 +14,8 @@ import {
   type FeaturedCreatorEntry,
   fetchFeaturedCreatorEntries,
   formatCompactMetric,
-  formatDelta,
-  formatUsdMetric,
   getCreatorTicker,
-  isPositiveDelta
+  getFeaturedCreatorAge
 } from "@/helpers/liveCreatorData";
 
 const SectionHeader = ({
@@ -83,7 +81,6 @@ const CreatorRow = ({ creator }: { creator: FeaturedCreatorEntry }) => {
     address: creator.creatorWalletAddress || creator.address,
     handle: creator.handle
   });
-  const positive = isPositiveDelta(creator.marketCapDelta24h);
 
   if (!creatorPath) {
     return null;
@@ -116,20 +113,24 @@ const CreatorRow = ({ creator }: { creator: FeaturedCreatorEntry }) => {
             </div>
             <div className="mt-1 flex items-center gap-2 text-[12px] text-gray-500 dark:text-gray-400">
               <span className="truncate">{creator.handle}</span>
-              <span className="text-gray-300 dark:text-gray-700">•</span>
-              <span>{formatUsdMetric(creator.marketCap)} MC</span>
+              <span className="text-gray-300 dark:text-gray-700">/</span>
+              <span>{creator.category || "Creator"}</span>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-600 dark:bg-white/5 dark:text-gray-300">
+                {formatCompactMetric(creator.launchCount || 1)} coins
+              </span>
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-600 dark:bg-white/5 dark:text-gray-300">
+                {formatCompactMetric(creator.creatorE1xpTotal || 0)} E1XP
+              </span>
             </div>
           </div>
           <div className="shrink-0 text-right">
             <p className="font-semibold text-[14px] text-gray-900 dark:text-white">
-              {formatUsdMetric(creator.volume24h)}
+              {getFeaturedCreatorAge(creator.createdAt)}
             </p>
-            <p
-              className={`mt-1 font-semibold text-[12px] ${
-                positive ? "text-[#12c46b]" : "text-rose-500"
-              }`}
-            >
-              {formatDelta(creator.marketCapDelta24h)}
+            <p className="mt-1 font-semibold text-[#12c46b] text-[12px]">
+              {creator.isOfficial ? "Verified" : "Public"}
             </p>
           </div>
         </div>
@@ -160,7 +161,7 @@ const SearchLanding = () => {
 
       <section className="space-y-3">
         <SectionHeader
-          subtitle="Live coin discovery across Every1 and Zora."
+          subtitle="Live coin discovery from launches created on Every1."
           title="Trending Coins"
         />
         <TrendingCoinsCard />
@@ -168,7 +169,7 @@ const SearchLanding = () => {
 
       <section className="space-y-3">
         <SectionHeader
-          subtitle="Creator coins getting attention right now."
+          subtitle="Creators building and launching coins on Every1."
           title="Trending Creators"
         />
         {creatorsQuery.isLoading ? (
@@ -246,7 +247,7 @@ const SearchLanding = () => {
                           {formatCompactMetric(community.memberCount)} members
                         </span>
                         <span className="text-gray-300 dark:text-gray-700">
-                          •
+                          /
                         </span>
                         <span>
                           {formatCompactMetric(community.postCount)} posts

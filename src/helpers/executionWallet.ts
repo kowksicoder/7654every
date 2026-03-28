@@ -1,6 +1,5 @@
 import type { SmartWalletClientType } from "@privy-io/react-auth/smart-wallets";
 import type { Address, Hex, WalletClient } from "viem";
-import { buildFiatAuthMessage } from "@/helpers/fiat";
 
 const EXECUTION_WALLET_LINK_PATH = "/api/wallet/execution";
 
@@ -45,6 +44,32 @@ const sha256Hex = async (value: string) => {
     .join("");
 };
 
+export const buildExecutionWalletAuthMessage = ({
+  bodyHash,
+  method,
+  pathname,
+  profileId,
+  timestamp,
+  walletAddress
+}: {
+  bodyHash: string;
+  method: string;
+  pathname: string;
+  profileId: string;
+  timestamp: string;
+  walletAddress: string;
+}) =>
+  [
+    "Every1 Wallet Setup",
+    "Action: Link your Every1 wallet",
+    `Method: ${method.toUpperCase()}`,
+    `Path: ${pathname}`,
+    `Profile-ID: ${profileId}`,
+    `Wallet: ${walletAddress.toLowerCase()}`,
+    `Timestamp: ${timestamp}`,
+    `Body-SHA256: ${bodyHash}`
+  ].join("\n");
+
 const createIdentityAuthHeaders = async ({
   body,
   identityWalletAddress,
@@ -62,7 +87,7 @@ const createIdentityAuthHeaders = async ({
 
   const timestamp = Date.now().toString();
   const bodyHash = await sha256Hex(body);
-  const message = buildFiatAuthMessage({
+  const message = buildExecutionWalletAuthMessage({
     bodyHash,
     method: "POST",
     pathname: EXECUTION_WALLET_LINK_PATH,
@@ -120,9 +145,16 @@ export const linkExecutionWallet = async ({
     profileId,
     timestamp
   });
-  const executionWalletSignature = await executionWalletClient.signMessage({
-    message
-  });
+  const executionWalletSignature = await executionWalletClient.signMessage(
+    {
+      message
+    },
+    {
+      uiOptions: {
+        showWalletUIs: false
+      }
+    }
+  );
   const body = JSON.stringify({
     executionWalletAddress,
     executionWalletSignature,

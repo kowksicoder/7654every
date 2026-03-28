@@ -4,22 +4,16 @@ import {
   SparklesIcon
 } from "@heroicons/react/24/outline";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { setApiKey } from "@zoralabs/coins-sdk";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, ErrorMessage, Spinner } from "@/components/Shared/UI";
 import { HomeFeedSort, HomeFeedType, HomeFeedView } from "@/data/enums";
 import cn from "@/helpers/cn";
 import {
   EVERY1_PUBLIC_COIN_COLLABORATIONS_QUERY_KEY,
-  listPublicCoinCollaborations,
-  listPublicCollaborationCoins
+  listPublicCoinCollaborations
 } from "@/helpers/every1";
-import getZoraApiKey from "@/helpers/getZoraApiKey";
 import { getPlatformLaunchCategoryForFeedType } from "@/helpers/platformCategories";
-import {
-  fetchPlatformDiscoverCoins,
-  mergePriorityItemsByAddress
-} from "@/helpers/platformDiscovery";
+import { fetchPlatformDiscoverCoins } from "@/helpers/platformDiscovery";
 import useDesktopSidebarCollapsed from "@/hooks/useDesktopSidebarCollapsed";
 import useLoadMoreOnIntersect from "@/hooks/useLoadMoreOnIntersect";
 import { useHomeTabStore } from "@/store/persisted/useHomeTabStore";
@@ -32,12 +26,6 @@ import {
   type ZoraFeedItem,
   zoraHomeFeedConfig
 } from "./zoraHomeFeedConfig";
-
-const zoraApiKey = getZoraApiKey();
-
-if (zoraApiKey) {
-  setApiKey(zoraApiKey);
-}
 
 interface ZoraFeedPage {
   items: ZoraFeedItem[];
@@ -104,135 +92,33 @@ const ZoraFeed = () => {
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
-      if (!zoraApiKey) {
-        throw new Error("Missing Zora API key for the Zora feed.");
-      }
-
-      if (feedType === HomeFeedType.COLLABORATIONS) {
-        const offset = Number.isFinite(Number(pageParam))
-          ? Number(pageParam)
-          : 0;
-        const publicCollaborationCoins = await listPublicCollaborationCoins({
-          limit: 20,
-          offset
-        });
-        const { getCoin } = await import("@zoralabs/coins-sdk");
-
-        const coinResults = await Promise.all(
-          publicCollaborationCoins.map(async (collaboration) => {
-            try {
-              const response = await getCoin({
-                address: collaboration.coinAddress as `0x${string}`,
-                chain: 8453
-              });
-              const coin = response.data?.zora20Token;
-
-              if (
-                !coin ||
-                (coin as { platformBlocked?: boolean }).platformBlocked ||
-                (coin.creatorProfile as { platformBlocked?: boolean } | null)
-                  ?.platformBlocked
-              ) {
-                return null;
-              }
-
-              return {
-                ...coin,
-                id: coin.address
-              } as ZoraFeedItem;
-            } catch {
-              return null;
-            }
-          })
-        );
-
-        return {
-          items: coinResults.filter(Boolean) as ZoraFeedItem[],
-          nextCursor:
-            publicCollaborationCoins.length >= 20
-              ? String(offset + 20)
-              : undefined
-        };
-      }
-
-      const response = await currentFeed.query({
-        after: pageParam as string | undefined,
-        count: 20
+      const offset = Number.isFinite(Number(pageParam)) ? Number(pageParam) : 0;
+      const items = await fetchPlatformDiscoverCoins({
+        category: getPlatformLaunchCategoryForFeedType(feedType),
+        limit: 20,
+        offset
       });
-      const edges = response.data?.exploreList?.edges ?? [];
-      const pageInfo = response.data?.exploreList?.pageInfo;
 
       return {
-        items: edges
-          .map((edge) => edge.node)
-          .filter(
-            (item) =>
-              !item.platformBlocked && !item.creatorProfile?.platformBlocked
-          ),
-        nextCursor: pageInfo?.hasNextPage ? pageInfo.endCursor : undefined
+        items: items as ZoraFeedItem[],
+        nextCursor: items.length >= 20 ? String(offset + 20) : undefined
       };
     },
     queryKey: [ZORA_HOME_FEED_QUERY_KEY, feedType],
     staleTime: 30_000
   });
-  const platformPriorityQuery = useQuery({
-    enabled: feedType !== HomeFeedType.COLLABORATIONS,
-    queryFn: async () =>
-      await fetchPlatformDiscoverCoins({
-        category: getPlatformLaunchCategoryForFeedType(feedType),
-        limit: 10
-      }),
-    queryKey: ["platform-priority-feed-coins", feedType],
-    staleTime: 30_000
-  });
-  const platformPriorityItems = useMemo(
-    () => (platformPriorityQuery.data || []) as ZoraFeedItem[],
-    [platformPriorityQuery.data]
-  );
-  const platformPriorityOrder = useMemo(
-    () =>
-      new Map(
-        platformPriorityItems.map((item, index) => [
-          item.address.toLowerCase(),
-          index
-        ])
-      ),
-    [platformPriorityItems]
-  );
 
   const items = useMemo(
     () =>
-      mergePriorityItemsByAddress(
-        platformPriorityItems,
+      (
         (data?.pages.flatMap((page) => page.items) ?? []) as ZoraFeedItem[]
       ).sort((a, b) => {
-        const aPriorityRank = platformPriorityOrder.get(
-          a.address.toLowerCase()
-        );
-        const bPriorityRank = platformPriorityOrder.get(
-          b.address.toLowerCase()
-        );
-
-        if (aPriorityRank !== undefined || bPriorityRank !== undefined) {
-          if (aPriorityRank === undefined) {
-            return 1;
-          }
-
-          if (bPriorityRank === undefined) {
-            return -1;
-          }
-
-          if (aPriorityRank !== bPriorityRank) {
-            return aPriorityRank - bPriorityRank;
-          }
-        }
-
         const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
 
         return sortMode === HomeFeedSort.OLDEST ? aTime - bTime : bTime - aTime;
       }),
-    [data?.pages, platformPriorityItems, platformPriorityOrder, sortMode]
+    [data?.pages, sortMode]
   );
   const collaborationMetadataQuery = useQuery({
     enabled: items.length > 0,

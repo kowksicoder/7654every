@@ -105,6 +105,7 @@ export interface SupportQuoteInput {
   creatorCoinId?: string;
   creatorId?: string;
   coinAddress?: string;
+  executionWalletAddress?: string;
   launchId?: string;
   ticker?: string;
   idempotencyKey?: string;
@@ -125,6 +126,7 @@ export interface SupportQuoteResponse {
 }
 
 export interface SupportExecuteInput {
+  executionWalletAddress?: string;
   quoteId: string;
   idempotencyKey?: string;
 }
@@ -152,6 +154,7 @@ export interface SellQuoteInput {
   coinAmount: number;
   creatorCoinId?: string;
   coinAddress?: string;
+  executionWalletAddress?: string;
   launchId?: string;
   ticker?: string;
   idempotencyKey?: string;
@@ -179,6 +182,7 @@ export interface SellQuoteResponse {
 }
 
 export interface SellExecuteInput {
+  executionWalletAddress?: string;
   quoteId: string;
   idempotencyKey?: string;
   transactionHash?: string;

@@ -23,7 +23,27 @@ export const buildFiatAuthMessage = ({
     `Body-SHA256: ${bodyHash}`
   ].join("\n");
 
+export const buildExecutionWalletAuthMessage = ({
+  bodyHash,
+  method,
+  pathname,
+  profileId,
+  timestamp,
+  walletAddress
+}) =>
+  [
+    "Every1 Wallet Setup",
+    "Action: Link your Every1 wallet",
+    `Method: ${String(method || "GET").toUpperCase()}`,
+    `Path: ${pathname}`,
+    `Profile-ID: ${profileId}`,
+    `Wallet: ${walletAddress.toLowerCase()}`,
+    `Timestamp: ${timestamp}`,
+    `Body-SHA256: ${bodyHash}`
+  ].join("\n");
+
 export const authenticateFiatRequest = async ({
+  allowExecutionWallet = false,
   rawBody,
   request,
   supabase
@@ -59,20 +79,35 @@ export const authenticateFiatRequest = async ({
   );
 
   const bodyHash = sha256Hex(rawBody || "");
+  const pathname = new URL(request.url || "/", "http://localhost").pathname;
   const message = buildFiatAuthMessage({
     bodyHash,
     method: request.method,
-    pathname: new URL(request.url || "/", "http://localhost").pathname,
+    pathname,
+    profileId,
+    timestamp,
+    walletAddress
+  });
+  const executionWalletMessage = buildExecutionWalletAuthMessage({
+    bodyHash,
+    method: request.method,
+    pathname,
     profileId,
     timestamp,
     walletAddress
   });
 
-  const validSignature = await verifyMessage({
-    address: walletAddress,
-    message,
-    signature
-  });
+  const validSignature =
+    (await verifyMessage({
+      address: walletAddress,
+      message,
+      signature
+    })) ||
+    (await verifyMessage({
+      address: walletAddress,
+      message: executionWalletMessage,
+      signature
+    }));
 
   assert(validSignature, "Invalid fiat request signature.", 401);
 
@@ -89,8 +124,13 @@ export const authenticateFiatRequest = async ({
   }
 
   assert(profile, "Profile not found.", 401);
+  const matchesIdentity =
+    profile.wallet_address?.toLowerCase() === walletAddress;
+  const matchesExecution =
+    profile.execution_wallet_address?.toLowerCase() === walletAddress;
+
   assert(
-    profile.wallet_address?.toLowerCase() === walletAddress,
+    matchesIdentity || (allowExecutionWallet && matchesExecution),
     "Wallet does not match the signed profile.",
     403
   );

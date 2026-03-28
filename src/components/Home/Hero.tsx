@@ -10,36 +10,27 @@ import {
   XMarkIcon
 } from "@heroicons/react/24/outline";
 import { useQuery } from "@tanstack/react-query";
-import { getMostValuableCreatorCoins, setApiKey } from "@zoralabs/coins-sdk";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Image } from "@/components/Shared/UI";
 import { DEFAULT_AVATAR } from "@/data/constants";
 import cn from "@/helpers/cn";
 import formatAddress from "@/helpers/formatAddress";
 import { formatCompactNaira } from "@/helpers/formatNaira";
-import getZoraApiKey from "@/helpers/getZoraApiKey";
-import { getPublicExploreCoinOverrides } from "@/helpers/staff";
-import { hasSupabaseConfig } from "@/helpers/supabase";
+import { fetchPlatformDiscoverCoins } from "@/helpers/platformDiscovery";
 import type { ZoraFeedItem } from "./zoraHomeFeedConfig";
-
-const zoraApiKey = getZoraApiKey();
-
-if (zoraApiKey) {
-  setApiKey(zoraApiKey);
-}
 
 const STORY_BAR_QUERY_KEY = "zora-home-story-bar";
 const STORY_PLACEHOLDER_COUNT = 10;
 const STORY_DURATION_MS = 5000;
 const STORY_FETCH_COUNT = 18;
 
-const formatUsdMetric = (value?: string) => {
+const formatUsdMetric = (value?: null | string) => {
   const number = Number.parseFloat(value ?? "");
 
   return formatCompactNaira(number, 2);
 };
 
-const formatDelta = (value?: string) => {
+const formatDelta = (value?: null | string) => {
   const number = Number.parseFloat(value ?? "");
 
   if (!Number.isFinite(number)) {
@@ -371,78 +362,11 @@ const Hero = ({ variant = "page" }: HeroProps) => {
 
   const { data, isLoading } = useQuery({
     queryFn: async () => {
-      if (!zoraApiKey) {
-        return [];
-      }
-
-      const response = await getMostValuableCreatorCoins({
-        count: STORY_FETCH_COUNT
+      const items = await fetchPlatformDiscoverCoins({
+        limit: STORY_FETCH_COUNT
       });
-      const edges = response.data?.exploreList?.edges ?? [];
-      const items = edges
-        .map((edge) => edge.node)
-        .filter(
-          (item) =>
-            !item.platformBlocked && !item.creatorProfile?.platformBlocked
-        );
 
-      if (!hasSupabaseConfig()) {
-        return items.slice(0, STORY_PLACEHOLDER_COUNT);
-      }
-
-      const overrides = await getPublicExploreCoinOverrides().catch(() => []);
-      const hiddenAddresses = new Set(
-        overrides
-          .filter((override) => override.isHidden && override.coinAddress)
-          .map((override) => override.coinAddress?.toLowerCase())
-      );
-      const hiddenTickers = new Set(
-        overrides
-          .filter((override) => override.isHidden && override.ticker)
-          .map((override) => override.ticker?.toLowerCase())
-      );
-      const pinnedOverrides = overrides
-        .filter(
-          (override) => !override.isHidden && override.pinnedSlot !== null
-        )
-        .sort(
-          (a, b) =>
-            (a.pinnedSlot || Number.MAX_SAFE_INTEGER) -
-            (b.pinnedSlot || Number.MAX_SAFE_INTEGER)
-        );
-
-      const filteredItems = items.filter(
-        (item) =>
-          !hiddenAddresses.has(item.address.toLowerCase()) &&
-          !hiddenTickers.has(item.symbol?.toLowerCase?.() || "")
-      );
-
-      const orderedItems: ZoraFeedItem[] = [];
-      const seenAddresses = new Set<string>();
-
-      for (const override of pinnedOverrides) {
-        const match = filteredItems.find(
-          (item) =>
-            item.address.toLowerCase() ===
-              override.coinAddress?.toLowerCase() ||
-            (item.symbol?.toLowerCase?.() || "") ===
-              (override.ticker?.toLowerCase() || "")
-        );
-
-        if (match && !seenAddresses.has(match.address.toLowerCase())) {
-          seenAddresses.add(match.address.toLowerCase());
-          orderedItems.push(match);
-        }
-      }
-
-      for (const item of filteredItems) {
-        if (!seenAddresses.has(item.address.toLowerCase())) {
-          seenAddresses.add(item.address.toLowerCase());
-          orderedItems.push(item);
-        }
-      }
-
-      return orderedItems.slice(0, STORY_PLACEHOLDER_COUNT);
+      return (items as ZoraFeedItem[]).slice(0, STORY_PLACEHOLDER_COUNT);
     },
     queryKey: [STORY_BAR_QUERY_KEY],
     staleTime: 60_000

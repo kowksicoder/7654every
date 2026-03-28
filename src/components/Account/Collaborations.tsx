@@ -13,6 +13,7 @@ import { createPublicClient, erc20Abi, formatUnits, http } from "viem";
 import { base } from "viem/chains";
 import Loader from "@/components/Shared/Loader";
 import { BASE_RPC_URL, ZORA_API_KEY } from "@/data/constants";
+import { logActionError } from "@/helpers/actionErrorLogger";
 import formatRelativeOrAbsolute from "@/helpers/datetime/formatRelativeOrAbsolute";
 import {
   cancelCollaborationCoinInvite,
@@ -36,7 +37,6 @@ import {
 } from "@/helpers/every1";
 import { toViemWalletClient } from "@/helpers/executionWallet";
 import formatAddress from "@/helpers/formatAddress";
-import sanitizeDStorageUrl from "@/helpers/sanitizeDStorageUrl";
 import { announceTelegramCoinLaunch } from "@/helpers/telegramAnnouncements";
 import useCopyToClipboard from "@/hooks/useCopyToClipboard";
 import useEvery1ExecutionWallet from "@/hooks/useEvery1ExecutionWallet";
@@ -856,22 +856,17 @@ const Collaborations = ({
         tone: "pending"
       });
 
-      const metadataResponse = await fetch(
-        sanitizeDStorageUrl(collaboration.metadataUri)
-      );
-
-      if (!metadataResponse.ok) {
-        throw new Error("Couldn't load the saved collaboration metadata.");
-      }
-
-      const metadata = await metadataResponse.json();
       const createdCoin = await createCoin({
         call: {
           chainId: base.id,
           creator: creatorAddress,
           currency: "ETH",
-          metadata,
+          metadata: {
+            type: "RAW_URI",
+            uri: collaboration.metadataUri
+          },
           name: collaboration.title,
+          skipMetadataValidation: true,
           symbol: collaboration.ticker.toUpperCase()
         },
         options: {
@@ -896,11 +891,20 @@ const Collaborations = ({
         collaboration.collaborationId,
         deployedCoinAddress
       );
-      if (
-        creatorProfileId &&
-        identityWalletAddress &&
-        identityWalletClient?.account
-      ) {
+      const telegramWallet =
+        identityWalletClient?.account && identityWalletAddress
+          ? {
+              address: identityWalletAddress,
+              client: identityWalletClient
+            }
+          : executionWalletClient?.account && executionWalletAddress
+            ? {
+                address: executionWalletAddress,
+                client: executionWalletClient
+              }
+            : null;
+
+      if (creatorProfileId && telegramWallet) {
         await announceTelegramCoinLaunch({
           category: "Collaboration",
           coinAddress: deployedCoinAddress,
@@ -908,8 +912,8 @@ const Collaborations = ({
           coinSymbol: collaboration.ticker.toUpperCase(),
           launchType: "collaboration",
           profileId: creatorProfileId,
-          walletAddress: identityWalletAddress,
-          walletClient: identityWalletClient
+          walletAddress: telegramWallet.address,
+          walletClient: telegramWallet.client
         }).catch((error) => {
           console.error("Failed to announce collaboration coin launch", error);
         });
@@ -925,7 +929,14 @@ const Collaborations = ({
       await new Promise((resolve) => setTimeout(resolve, 1600));
       navigate(`/coins/${deployedCoinAddress}?created=1`);
     } catch (error) {
-      console.error("Failed to launch collaboration coin", error);
+      logActionError("coin.create.collaboration", error, {
+        chainId: base.id,
+        collaborationId: collaboration.collaborationId,
+        creatorProfileId,
+        metadataUri: collaboration.metadataUri,
+        profileId: profile?.id || null,
+        ticker: collaboration.ticker
+      });
       setStatusModal(null);
       toast.error("Failed to launch collaboration coin", {
         description:

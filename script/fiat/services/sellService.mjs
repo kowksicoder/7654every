@@ -35,8 +35,22 @@ export const createSellService = ({
   sellFeeBps = 250,
   supabase
 }) => {
-  const resolveExecutionWalletAddress = (profile) =>
-    profile?.execution_wallet_address || profile?.wallet_address || null;
+  const resolveExecutionWalletAddress = (profile, body = null) => {
+    const requestedExecutionWalletAddress = String(
+      body?.executionWalletAddress || ""
+    )
+      .trim()
+      .toLowerCase();
+
+    if (
+      requestedExecutionWalletAddress &&
+      isAddress(requestedExecutionWalletAddress)
+    ) {
+      return requestedExecutionWalletAddress;
+    }
+
+    return profile?.execution_wallet_address || profile?.wallet_address || null;
+  };
 
   const buildExecutionPayload = ({ transaction, wallet }) => ({
     message:
@@ -224,7 +238,7 @@ export const createSellService = ({
       "Naira sell settlement is not configured on this server.",
       503
     );
-    const executionWalletAddress = resolveExecutionWalletAddress(profile);
+    const executionWalletAddress = resolveExecutionWalletAddress(profile, body);
     assert(
       executionWalletAddress && isAddress(executionWalletAddress),
       "A connected execution wallet is required to sell creator coins.",

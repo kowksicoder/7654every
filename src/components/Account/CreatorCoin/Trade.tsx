@@ -34,6 +34,7 @@ import {
   Tooltip
 } from "@/components/Shared/UI";
 import { BASE_RPC_URL } from "@/data/constants";
+import { logActionError } from "@/helpers/actionErrorLogger";
 import cn from "@/helpers/cn";
 import {
   EVERY1_NOTIFICATION_COUNT_QUERY_KEY,
@@ -186,6 +187,25 @@ const Trade = ({
       client: preparedWallet.executionWalletClient
     };
   };
+  const resolveFiatExecutionWalletAddress = async () => {
+    const currentExecutionWalletAddress =
+      executionWalletAddress && isAddress(executionWalletAddress)
+        ? (executionWalletAddress as Address)
+        : undefined;
+
+    if (currentExecutionWalletAddress) {
+      return currentExecutionWalletAddress;
+    }
+
+    const preparedWallet = await prepareExecutionWallet().catch(() => null);
+    const preparedExecutionWalletAddress =
+      preparedWallet?.executionWalletAddress &&
+      isAddress(preparedWallet.executionWalletAddress)
+        ? (preparedWallet.executionWalletAddress as Address)
+        : undefined;
+
+    return preparedExecutionWalletAddress;
+  };
 
   useEffect(() => {
     (async () => {
@@ -304,8 +324,11 @@ const Trade = ({
       setFiatQuoteError(null);
 
       if (mode === "buy") {
+        const activeExecutionWalletAddress =
+          await resolveFiatExecutionWalletAddress();
         const quote = await getSupportQuote({
           coinAddress: coin.address as Address,
+          executionWalletAddress: activeExecutionWalletAddress,
           idempotencyKey: createFiatIdempotencyKey("support-quote"),
           nairaAmount: parsedAmount,
           profileId: profile.id,
@@ -325,9 +348,12 @@ const Trade = ({
           )} ${symbol || "TOKEN"} after ${formatNaira(quote.fee_naira)} in fees.`
         });
       } else {
+        const activeExecutionWalletAddress =
+          await resolveFiatExecutionWalletAddress();
         const quote = await getSellQuote({
           coinAddress: coin.address as Address,
           coinAmount: parsedAmount,
+          executionWalletAddress: activeExecutionWalletAddress,
           idempotencyKey: createFiatIdempotencyKey("sell-quote"),
           profileId: profile.id,
           walletAddress: fiatWalletAddress,
@@ -351,6 +377,18 @@ const Trade = ({
         });
       }
     } catch (error) {
+      logActionError("trade.fiat.quote", error, {
+        amount: amount || null,
+        chainId: base.id,
+        coinAddress: coin.address,
+        coinSymbol: symbol || coin.symbol || coin.name,
+        executionWalletAddress: executionWalletAddress || null,
+        mode,
+        parsedAmount,
+        profileId: profile?.id || null,
+        quoteKind: mode === "buy" ? "support" : "sell",
+        variant
+      });
       const message = normalizeFiatUiError(
         error,
         "Unable to get a Naira quote right now."
@@ -392,13 +430,19 @@ const Trade = ({
 
       const response =
         mode === "buy"
-          ? await executeSupport({
-              idempotencyKey: createFiatIdempotencyKey("support-execute"),
-              profileId: profile.id,
-              quoteId: fiatQuote.quoteId,
-              walletAddress: fiatWalletAddress,
-              walletClient: fiatWalletClient
-            })
+          ? await (async () => {
+              const activeExecutionWalletAddress =
+                await resolveFiatExecutionWalletAddress();
+
+              return await executeSupport({
+                executionWalletAddress: activeExecutionWalletAddress,
+                idempotencyKey: createFiatIdempotencyKey("support-execute"),
+                profileId: profile.id,
+                quoteId: fiatQuote.quoteId,
+                walletAddress: fiatWalletAddress,
+                walletClient: fiatWalletClient
+              });
+            })()
           : await (async () => {
               const settlement = fiatQuote.settlement;
 
@@ -408,7 +452,8 @@ const Trade = ({
                 );
               }
 
-              const { client } = await ensureExecutionWalletReady();
+              const { address: readyTradeWalletAddress, client } =
+                await ensureExecutionWalletReady();
               const executionAccount = client.account;
 
               if (!executionAccount) {
@@ -442,6 +487,7 @@ const Trade = ({
               });
 
               return await executeSell({
+                executionWalletAddress: readyTradeWalletAddress,
                 idempotencyKey: createFiatIdempotencyKey("sell-execute"),
                 profileId: profile.id,
                 quoteId: fiatQuote.quoteId,
@@ -499,6 +545,16 @@ const Trade = ({
       setTradeStatusModal(null);
       onClose?.();
     } catch (error) {
+      logActionError("trade.fiat.execute", error, {
+        amount: amount || null,
+        chainId: base.id,
+        coinAddress: coin.address,
+        coinSymbol: symbol || coin.symbol || coin.name,
+        mode,
+        profileId: profile?.id || null,
+        quoteId: fiatQuote?.quoteId || null,
+        variant
+      });
       const message = normalizeFiatUiError(
         error,
         "Unable to complete this Naira request right now."
@@ -632,7 +688,18 @@ const Trade = ({
       if (!onClose && !isPageVariant) {
         setTradeStatusModal(null);
       }
-    } catch {
+    } catch (error) {
+      logActionError("trade.onchain", error, {
+        amount: amount || null,
+        chainId: base.id,
+        coinAddress: coin.address,
+        coinSymbol: symbol || coin.symbol || coin.name,
+        inputLabel: tradeInputLabel,
+        mode,
+        outputLabel: tradeOutputLabel,
+        profileId: profile?.id || null,
+        variant
+      });
       setTradeStatusModal(null);
       toast.error("Trade failed");
     } finally {

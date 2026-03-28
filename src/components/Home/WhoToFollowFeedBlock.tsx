@@ -11,7 +11,7 @@ import formatAddress from "@/helpers/formatAddress";
 import { formatCompactNaira, NAIRA_SYMBOL } from "@/helpers/formatNaira";
 import type { ZoraFeedItem } from "./zoraHomeFeedConfig";
 
-const formatUsdMetric = (value?: string) => {
+const formatUsdMetric = (value?: null | string) => {
   const number = Number.parseFloat(value ?? "");
 
   return formatCompactNaira(number, 2);

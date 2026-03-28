@@ -1,5 +1,24 @@
 import type { Address, Hex, WalletClient } from "viem";
 
+const shouldSkipTelegramPost = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const hostname = window.location.hostname;
+  const hasPublicTunnel = Boolean(
+    String(
+      (import.meta.env.PUBLIC_TUNNEL_URL as string | undefined) ||
+        (import.meta.env.FIAT_PUBLIC_APP_URL as string | undefined) ||
+        ""
+    ).trim()
+  );
+
+  return (
+    !hasPublicTunnel && (hostname === "127.0.0.1" || hostname === "localhost")
+  );
+};
+
 const sha256Hex = async (value: string) => {
   const encoded = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest("SHA-256", encoded);
@@ -103,6 +122,10 @@ const postTelegramEvent = async <TResponse>({
   walletAddress: Address;
   walletClient: WalletClient;
 }) => {
+  if (shouldSkipTelegramPost()) {
+    return null as TResponse;
+  }
+
   const bodyString = JSON.stringify(body);
   const headers = {
     "content-type": "application/json",

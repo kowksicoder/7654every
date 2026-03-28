@@ -22,13 +22,13 @@ import truncateByWords from "@/helpers/truncateByWords";
 import type { Every1PublicCoinCollaboration } from "@/types/every1";
 import type { ZoraFeedItem } from "./zoraHomeFeedConfig";
 
-const formatUsdMetric = (value?: string) => {
+const formatUsdMetric = (value?: null | string) => {
   const number = Number.parseFloat(value ?? "");
 
   return formatCompactNaira(number, 2);
 };
 
-const formatDelta = (value?: string) => {
+const formatDelta = (value?: null | string) => {
   const number = Number.parseFloat(value ?? "");
 
   if (!Number.isFinite(number)) {

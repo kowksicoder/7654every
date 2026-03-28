@@ -7,6 +7,8 @@ import {
   MusicalNoteIcon,
   PhotoIcon
 } from "@heroicons/react/24/outline";
+import type { SendTransactionModalUIOptions } from "@privy-io/react-auth";
+import type { SmartWalletClientType } from "@privy-io/react-auth/smart-wallets";
 import {
   createCoin,
   createMetadataBuilder,
@@ -22,9 +24,9 @@ import { createPublicClient, http } from "viem";
 import { base } from "viem/chains";
 import evLogo from "@/assets/fonts/evlogo.jpg";
 import MetaTags from "@/components/Common/MetaTags";
-import CoinDetailSlidesPreview from "@/components/Create/CoinDetailSlidesPreview";
 import { ActionStatusModal } from "@/components/Shared/UI";
 import { BASE_RPC_URL, ZORA_API_KEY } from "@/data/constants";
+import { logActionError } from "@/helpers/actionErrorLogger";
 import cn from "@/helpers/cn";
 import {
   getMediaImportConfig,
@@ -54,9 +56,22 @@ setApiKey(ZORA_API_KEY);
 
 const CREATE_BANNER_IMAGE =
   "https://i.pinimg.com/736x/81/95/3d/81953df1510811e814ceafc09bd7280e.jpg";
-const CREATE_TEST_SPOTIFY_LINK =
-  "https://open.spotify.com/track/5YrBnxZSRpzYHOBCUfGFw1?utm_source=generator";
 const NAIRA_SYMBOL = "\u20A6";
+const CATEGORY_OPTION_LABELS: Record<string, string> = {
+  Art: "🎨 Art",
+  Collaboration: "🤝 Collaboration",
+  Comedians: "😂 Comedians",
+  Communities: "👥 Communities",
+  Food: "🍜 Food",
+  Lifestyle: "✨ Lifestyle",
+  Movies: "🎬 Movies",
+  Music: "🎵 Music",
+  Photography: "📸 Photography",
+  Podcasts: "🎙️ Podcasts",
+  "Pop-Culture": "🔥 Pop-Culture",
+  Sports: "🏆 Sports",
+  Writers: "✍️ Writers"
+};
 
 type CreateTab = "collaboration" | "community" | "creator";
 type CreateStatusModalState = null | {
@@ -64,6 +79,8 @@ type CreateStatusModalState = null | {
   title: string;
   tone: "pending" | "success";
 };
+
+const LAUNCH_APPROVAL_CANCELLED_MESSAGE = "Launch approval cancelled.";
 
 const slugifyValue = (value: string) =>
   value
@@ -77,6 +94,53 @@ const formatSplitPercent = (value: number) =>
   Number.isInteger(value)
     ? String(value)
     : value.toFixed(2).replace(/\.?0+$/, "");
+
+const getCategoryOptionLabel = (category: string) =>
+  CATEGORY_OPTION_LABELS[category] || category;
+
+const mergeTransactionUiOptions = (
+  base: SendTransactionModalUIOptions,
+  override?: SendTransactionModalUIOptions
+): SendTransactionModalUIOptions => ({
+  ...base,
+  ...override,
+  transactionInfo: {
+    ...base.transactionInfo,
+    ...override?.transactionInfo,
+    contractInfo: {
+      ...base.transactionInfo?.contractInfo,
+      ...override?.transactionInfo?.contractInfo
+    }
+  }
+});
+
+const withSmartWalletTransactionUi = async <T,>(
+  client: null | SmartWalletClientType | undefined,
+  uiOptions: SendTransactionModalUIOptions,
+  run: () => Promise<T>
+) => {
+  if (!client) {
+    return await run();
+  }
+
+  const originalSendTransaction = client.sendTransaction.bind(client);
+  const patchedSendTransaction: SmartWalletClientType["sendTransaction"] = (
+    input,
+    options
+  ) =>
+    originalSendTransaction(input, {
+      ...options,
+      uiOptions: mergeTransactionUiOptions(uiOptions, options?.uiOptions)
+    });
+
+  client.sendTransaction = patchedSendTransaction;
+
+  try {
+    return await run();
+  } finally {
+    client.sendTransaction = originalSendTransaction;
+  }
+};
 
 const Create = () => {
   const navigate = useNavigate();
@@ -95,6 +159,7 @@ const Create = () => {
     identityWalletClient,
     isLinkingExecutionWallet,
     prepareExecutionWallet,
+    smartWalletClient,
     smartWalletEnabled,
     smartWalletError,
     smartWalletLoading
@@ -103,11 +168,17 @@ const Create = () => {
   const handleWrongNetwork = useHandleWrongNetwork();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const didApplyPrefill = useRef(false);
+  const launchApprovalResolveRef = useRef<null | (() => void)>(null);
+  const launchApprovalRejectRef = useRef<null | ((reason?: unknown) => void)>(
+    null
+  );
 
   const [activeTab, setActiveTab] = useState<CreateTab>(initialTab);
   const [ticker, setTicker] = useState("");
   const [name, setName] = useState("");
-  const [creatorCategory, setCreatorCategory] = useState("");
+  const [creatorCategory, setCreatorCategory] = useState<string>(
+    CREATOR_CREATE_CATEGORY_OPTIONS[0]
+  );
   const [description, setDescription] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
   const [collaboratorHandle, setCollaboratorHandle] = useState("");
@@ -116,10 +187,11 @@ const Create = () => {
   const [fileName, setFileName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
-  const [showFeeSheet, setShowFeeSheet] = useState(false);
+  const [isCoinModeHintOpen, setIsCoinModeHintOpen] = useState(false);
   const [mobileStep, setMobileStep] = useState<"form" | "ticker">("ticker");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusModal, setStatusModal] = useState<CreateStatusModalState>(null);
+  const coinModeHintRef = useRef<HTMLDivElement | null>(null);
 
   const publicClient = useMemo(
     () =>
@@ -140,6 +212,8 @@ const Create = () => {
 
   const isCommunity = activeTab === "community";
   const isCollaboration = activeTab === "collaboration";
+  const isLaunchPendingModal =
+    statusModal?.tone === "pending" && statusModal?.title === "Launch pending";
   const selectedCategory = isCommunity
     ? COMMUNITY_LAUNCH_CATEGORY
     : isCollaboration
@@ -169,26 +243,15 @@ const Create = () => {
     (isCommunity ? "community" : isCollaboration ? "collab" : "creator");
   const previewCurrencyTicker = `${NAIRA_SYMBOL}${previewTicker}`;
   const previewImage = filePreviewUrl || CREATE_BANNER_IMAGE;
-  const previewMediaUrl = mediaUrl.trim() || CREATE_TEST_SPOTIFY_LINK;
-  const creatorPreviewLabel =
-    profile?.displayName?.trim() ||
-    (profile?.username?.trim()
-      ? `@${profile.username.trim().replace(/^@+/, "")}`
-      : "Creator");
-  const previewCoinTitle = name.trim() || `${previewTicker.toUpperCase()} coin`;
   const mediaImportConfig = getMediaImportConfig(selectedCategory);
-  const walletSetupHint = smartWalletEnabled
-    ? executionWalletStatus.isReady
-      ? "Every1 covers network fees for coin creation."
-      : smartWalletError ||
-        "Every1 covers network fees for coin creation. We'll prepare your Every1 wallet after you continue."
-    : "Every1 covers network fees for coin creation. Launches will reopen once gas sponsorship is back online.";
   const topCopy = isCommunity
     ? {
         actionLabel: "Create community coin",
         availabilityLabel: "Community coin ready",
         heroTitle: "Launch a community coin",
         introTitle: "Publish the coin and the community together.",
+        modeHintBody:
+          "Launch a coin that opens with its community already attached.",
         postDestination: "Community hub + Every1 Feed",
         previewBody:
           "Your community coin launches with its group already linked and ready for members."
@@ -200,6 +263,8 @@ const Create = () => {
           heroTitle: "Start a collaboration coin",
           introTitle:
             "Lock the split up front and let your collaborator approve it.",
+          modeHintBody:
+            "Start a shared coin with a locked split before it goes live.",
           postDestination: "Invite first, launch after approval",
           previewBody:
             "The coin stays pending until your collaborator accepts the exact revenue split."
@@ -209,6 +274,8 @@ const Create = () => {
           availabilityLabel: "Creator coin ready",
           heroTitle: "Launch a creator coin",
           introTitle: "Upload from gallery and finish everything on one form.",
+          modeHintBody:
+            "Launch a coin for your drops, content, and audience in one step.",
           postDestination: "Every1 Feed",
           previewBody:
             "A tighter desktop canvas for ticker, cover, caption, and launch."
@@ -221,6 +288,81 @@ const Create = () => {
       }
     };
   }, [filePreviewUrl]);
+
+  useEffect(
+    () => () => {
+      launchApprovalRejectRef.current?.(
+        new Error(LAUNCH_APPROVAL_CANCELLED_MESSAGE)
+      );
+      launchApprovalResolveRef.current = null;
+      launchApprovalRejectRef.current = null;
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!isCoinModeHintOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) {
+        return;
+      }
+
+      if (!coinModeHintRef.current?.contains(target)) {
+        setIsCoinModeHintOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsCoinModeHintOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isCoinModeHintOpen]);
+
+  const renderCoinModeHint = () => (
+    <div className="relative inline-flex justify-center" ref={coinModeHintRef}>
+      <p className="inline-flex items-center gap-1.5 text-gray-500 text-sm dark:text-white/45">
+        {topCopy.heroTitle}
+        <button
+          aria-expanded={isCoinModeHintOpen}
+          aria-label="Explain this coin mode"
+          className="rounded-full text-gray-400 transition hover:text-gray-600 dark:text-white/45 dark:hover:text-white/72"
+          onClick={() => setIsCoinModeHintOpen((value) => !value)}
+          type="button"
+        >
+          <InformationCircleIcon className="h-4 w-4" />
+        </button>
+      </p>
+
+      {isCoinModeHintOpen ? (
+        <div
+          className="absolute top-full left-1/2 z-30 mt-2 w-[220px] -translate-x-1/2 rounded-[18px] border border-gray-200 bg-white px-3 py-2.5 text-left shadow-xl dark:border-white/10 dark:bg-[#17181c]"
+          role="dialog"
+        >
+          <p className="font-semibold text-[11px] text-gray-500 uppercase tracking-[0.18em] dark:text-white/42">
+            Coin mode
+          </p>
+          <p className="mt-1.5 text-[12px] text-gray-700 leading-5 dark:text-white/78">
+            {topCopy.modeHintBody}
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
 
   useEffect(() => {
     if (didApplyPrefill.current || description.trim()) {
@@ -251,6 +393,44 @@ const Create = () => {
     window.history.length > 1
       ? window.history.back()
       : (window.location.href = "/");
+  };
+
+  const clearLaunchApprovalRequest = () => {
+    launchApprovalResolveRef.current = null;
+    launchApprovalRejectRef.current = null;
+  };
+
+  const requestLaunchApproval = () =>
+    new Promise<void>((resolve, reject) => {
+      clearLaunchApprovalRequest();
+      launchApprovalResolveRef.current = () => {
+        clearLaunchApprovalRequest();
+        resolve();
+      };
+      launchApprovalRejectRef.current = (reason) => {
+        clearLaunchApprovalRequest();
+        reject(
+          reason instanceof Error
+            ? reason
+            : new Error(LAUNCH_APPROVAL_CANCELLED_MESSAGE)
+        );
+      };
+      setStatusModal({
+        description: "Approve to continue.",
+        title: "Launch pending",
+        tone: "pending"
+      });
+    });
+
+  const handleApproveLaunch = () => {
+    launchApprovalResolveRef.current?.();
+  };
+
+  const handleCancelLaunchApproval = () => {
+    launchApprovalRejectRef.current?.(
+      new Error(LAUNCH_APPROVAL_CANCELLED_MESSAGE)
+    );
+    setStatusModal(null);
   };
 
   const handleSelectTab = (nextTab: CreateTab) => {
@@ -421,6 +601,24 @@ const Create = () => {
       ticker: ticker.trim()
     });
   };
+  const resolveTelegramWallet = () => {
+    if (identityWalletClient?.account && identityWalletAddress) {
+      return {
+        address: identityWalletAddress,
+        client: identityWalletClient
+      };
+    }
+
+    if (executionWalletClient?.account && executionWalletAddress) {
+      return {
+        address: executionWalletAddress,
+        client: executionWalletClient
+      };
+    }
+
+    return null;
+  };
+
   const announceCoinLaunchToTelegram = async ({
     coinAddress,
     launchType
@@ -428,11 +626,9 @@ const Create = () => {
     coinAddress: string;
     launchType: "community" | "creator";
   }) => {
-    if (
-      !profile?.id ||
-      !identityWalletAddress ||
-      !identityWalletClient?.account
-    ) {
+    const telegramWallet = resolveTelegramWallet();
+
+    if (!profile?.id || !telegramWallet) {
       return;
     }
 
@@ -443,8 +639,8 @@ const Create = () => {
       coinSymbol: ticker.trim().toUpperCase(),
       launchType,
       profileId: profile.id,
-      walletAddress: identityWalletAddress,
-      walletClient: identityWalletClient
+      walletAddress: telegramWallet.address,
+      walletClient: telegramWallet.client
     });
   };
 
@@ -484,11 +680,12 @@ const Create = () => {
       setIsSubmitting(true);
       let client = toViemWalletClient(executionWalletClient);
       let creatorAddress = executionWalletAddress as Address | undefined;
+      let launchSmartWalletClient = smartWalletClient;
 
       if (!client || !creatorAddress || !executionWalletStatus.isReady) {
         setStatusModal({
-          description: "This should only take a moment.",
-          title: "Preparing your Every1 wallet",
+          description: "One moment.",
+          title: "Preparing wallet",
           tone: "pending"
         });
 
@@ -497,6 +694,8 @@ const Create = () => {
         creatorAddress = preparedWallet.executionWalletAddress as
           | Address
           | undefined;
+        launchSmartWalletClient =
+          preparedWallet.smartWalletClient || launchSmartWalletClient;
 
         if (!client || !creatorAddress || !client.account) {
           throw new Error(
@@ -506,18 +705,23 @@ const Create = () => {
         }
       }
 
-      setStatusModal({
-        description: isCommunity
-          ? "Publishing your community coin and linked group."
-          : isCollaboration
-            ? "Saving the project terms and sending the collaboration invite."
-            : "Publishing your creator coin to Every1 and Base.",
-        title: isCollaboration
-          ? "Sending your collaboration invite, please wait"
-          : "Launching your coin, please wait",
-        tone: "pending"
-      });
       await handleWrongNetwork({ chainId: base.id });
+
+      if (isCollaboration) {
+        setStatusModal({
+          description: "Sending invite.",
+          title: "Invite pending",
+          tone: "pending"
+        });
+      } else {
+        await requestLaunchApproval();
+        setStatusModal({
+          description:
+            "Publishing your coin on Base. This usually takes a moment.",
+          title: "Creating coin",
+          tone: "pending"
+        });
+      }
 
       const metadataUpload = await createMetadataBuilder()
         .withName(name.trim())
@@ -555,22 +759,30 @@ const Create = () => {
         return;
       }
 
-      const createdCoin = await createCoin({
-        call: {
-          chainId: base.id,
-          creator: creatorAddress,
-          currency: "ETH",
-          metadata: metadataUpload.createMetadataParameters.metadata,
-          name: name.trim(),
-          symbol: ticker.trim().toUpperCase()
+      const createdCoin = await withSmartWalletTransactionUi(
+        launchSmartWalletClient,
+        {
+          showWalletUIs: false
         },
-        options: {
-          account: client.account,
-          skipValidateTransaction: true
-        },
-        publicClient,
-        walletClient: client
-      });
+        () =>
+          createCoin({
+            call: {
+              chainId: base.id,
+              creator: creatorAddress,
+              currency: "ETH",
+              metadata: metadataUpload.createMetadataParameters.metadata,
+              name: name.trim(),
+              skipMetadataValidation: true,
+              symbol: ticker.trim().toUpperCase()
+            },
+            options: {
+              account: client.account,
+              skipValidateTransaction: true
+            },
+            publicClient,
+            walletClient: client
+          })
+      );
 
       const deployedCoinAddress =
         createdCoin.address || createdCoin.deployment?.coin || null;
@@ -594,8 +806,8 @@ const Create = () => {
           console.error("Failed to announce community coin launch", error);
         });
         setStatusModal({
-          description: "You have a new coin now, start making money!",
-          title: "Nice work!",
+          description: "Your coin is live.",
+          title: "Coin live",
           tone: "success"
         });
         await new Promise((resolve) => setTimeout(resolve, 1600));
@@ -613,14 +825,32 @@ const Create = () => {
           console.error("Failed to announce creator coin launch", error);
         });
         setStatusModal({
-          description: "You have a new coin now, start making money!",
-          title: "Nice work!",
+          description: "Your coin is live.",
+          title: "Coin live",
           tone: "success"
         });
         await new Promise((resolve) => setTimeout(resolve, 1600));
         navigate(`/coins/${deployedCoinAddress}?created=1`);
       }
     } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === LAUNCH_APPROVAL_CANCELLED_MESSAGE
+      ) {
+        setStatusModal(null);
+        return;
+      }
+
+      logActionError("coin.create", error, {
+        category: selectedCategory,
+        chainId: base.id,
+        hasImage: Boolean(selectedFile),
+        hasMediaUrl: Boolean(mediaUrl.trim()),
+        name: name.trim(),
+        profileId: profile?.id || null,
+        smartWalletEnabled,
+        ticker: ticker.trim().toUpperCase()
+      });
       setStatusModal(null);
       toast.error(
         isCommunity
@@ -634,6 +864,7 @@ const Create = () => {
         }
       );
     } finally {
+      clearLaunchApprovalRequest();
       setIsSubmitting(false);
     }
   };
@@ -744,78 +975,84 @@ const Create = () => {
           desktop ? "space-y-1.5" : "space-y-2"
         )}
       >
-        <label className="block">
-          <span
-            className={cn(
-              "block text-gray-500 dark:text-white/58",
-              desktop ? "mb-1 text-sm" : "mb-0.5 text-[10px]"
-            )}
-          >
-            {isCommunity
-              ? "Coin + community name"
-              : isCollaboration
-                ? "Project name"
-                : "Name"}
-          </span>
-          <input
-            className={cn(
-              "w-full border-none bg-gray-100 font-semibold text-gray-950 outline-none placeholder:text-gray-400 focus:ring-0 dark:bg-[#1b1c20] dark:text-white dark:placeholder:text-white/24",
-              desktop
-                ? "rounded-[16px] px-4 py-2.5 text-[22px]"
-                : "rounded-[14px] px-2.5 py-2 text-sm"
-            )}
-            onChange={(event) => setName(event.target.value)}
-            placeholder={
-              isCommunity
-                ? "Community name"
+        <div
+          className={cn(
+            "grid items-start gap-2",
+            desktop
+              ? "grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]"
+              : "grid-cols-2"
+          )}
+        >
+          <label className="block">
+            <span
+              className={cn(
+                "block text-gray-500 dark:text-white/58",
+                desktop ? "mb-1 text-sm" : "mb-0.5 text-[10px]"
+              )}
+            >
+              {isCommunity
+                ? "Coin + community name"
                 : isCollaboration
-                  ? "Asake x Rema Album Coin"
-                  : "Name"
-            }
-            value={name}
-          />
-        </label>
+                  ? "Project name"
+                  : "Name"}
+            </span>
+            <input
+              className={cn(
+                "w-full border-none bg-gray-100 font-semibold text-gray-950 outline-none placeholder:text-gray-400 focus:ring-0 dark:bg-[#1b1c20] dark:text-white dark:placeholder:text-white/24",
+                desktop
+                  ? "rounded-[16px] px-4 py-2.5 text-[22px]"
+                  : "rounded-[14px] px-2.5 py-2 text-sm"
+              )}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={
+                isCommunity
+                  ? "Community name"
+                  : isCollaboration
+                    ? "Asake x Rema Album Coin"
+                    : "Name"
+              }
+              value={name}
+            />
+          </label>
 
-        <label className="block">
-          <span
-            className={cn(
-              "block text-gray-500 dark:text-white/58",
-              desktop ? "mb-1 text-sm" : "mb-0.5 text-[10px]"
-            )}
-          >
-            Category
-          </span>
-          <select
-            className={cn(
-              "w-full appearance-none border-none bg-gray-100 font-semibold text-gray-950 outline-none focus:ring-0 dark:bg-[#1b1c20] dark:text-white",
-              desktop
-                ? "rounded-[16px] px-4 py-2.5 text-base"
-                : "rounded-[14px] px-2.5 py-2 text-sm"
-            )}
-            disabled={isCommunity || isCollaboration}
-            onChange={(event) => setCreatorCategory(event.target.value)}
-            value={selectedCategory}
-          >
-            {isCommunity || isCollaboration ? null : (
-              <option value="">Select category</option>
-            )}
-            {isCommunity ? (
-              <option value={COMMUNITY_LAUNCH_CATEGORY}>
-                {COMMUNITY_LAUNCH_CATEGORY}
-              </option>
-            ) : isCollaboration ? (
-              <option value={COLLABORATION_LAUNCH_CATEGORY}>
-                {COLLABORATION_LAUNCH_CATEGORY}
-              </option>
-            ) : (
-              CREATOR_CREATE_CATEGORY_OPTIONS.map((categoryOption) => (
-                <option key={categoryOption} value={categoryOption}>
-                  {categoryOption}
+          <label className="block">
+            <span
+              className={cn(
+                "block text-gray-500 dark:text-white/58",
+                desktop ? "mb-1 text-sm" : "mb-0.5 text-[10px]"
+              )}
+            >
+              Category
+            </span>
+            <select
+              className={cn(
+                "w-full appearance-none border-none bg-gray-100 font-semibold text-gray-950 outline-none focus:ring-0 dark:bg-[#1b1c20] dark:text-white",
+                desktop
+                  ? "rounded-[16px] px-4 py-2.5 text-base"
+                  : "rounded-[14px] px-2.5 py-2 text-sm"
+              )}
+              disabled={isCommunity || isCollaboration}
+              onChange={(event) => setCreatorCategory(event.target.value)}
+              value={selectedCategory}
+            >
+              {isCommunity ? (
+                <option value={COMMUNITY_LAUNCH_CATEGORY}>
+                  {getCategoryOptionLabel(COMMUNITY_LAUNCH_CATEGORY)}
                 </option>
-              ))
-            )}
-          </select>
-        </label>
+              ) : isCollaboration ? (
+                <option value={COLLABORATION_LAUNCH_CATEGORY}>
+                  {getCategoryOptionLabel(COLLABORATION_LAUNCH_CATEGORY)}
+                </option>
+              ) : (
+                CREATOR_CREATE_CATEGORY_OPTIONS.map((categoryOption) => (
+                  <option key={categoryOption} value={categoryOption}>
+                    {getCategoryOptionLabel(categoryOption)}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+        </div>
 
         <label className="block">
           <span
@@ -981,14 +1218,14 @@ const Create = () => {
                 alt={fileName || "Selected media"}
                 className={cn(
                   "w-full object-cover",
-                  desktop ? "aspect-[4/2]" : "aspect-[4/3.1]"
+                  desktop ? "aspect-[4/1.45]" : "aspect-[4/1.95]"
                 )}
                 src={filePreviewUrl}
               />
               <div
                 className={cn(
                   "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent",
-                  desktop ? "px-3 pt-7 pb-3" : "px-2.5 pt-6 pb-2"
+                  desktop ? "px-2.5 pt-5 pb-2.5" : "px-2 pt-4 pb-1.5"
                 )}
               >
                 <div className="flex items-end justify-between gap-3">
@@ -996,7 +1233,7 @@ const Create = () => {
                     <p
                       className={cn(
                         "truncate font-medium text-white/65",
-                        desktop ? "text-[11px]" : "text-[11px]"
+                        desktop ? "text-[10px]" : "text-[10px]"
                       )}
                     >
                       Selected image
@@ -1004,7 +1241,7 @@ const Create = () => {
                     <p
                       className={cn(
                         "truncate text-white",
-                        desktop ? "text-sm" : "text-xs"
+                        desktop ? "text-[13px]" : "text-[11px]"
                       )}
                     >
                       {fileName}
@@ -1014,8 +1251,8 @@ const Create = () => {
                     className={cn(
                       "rounded-full bg-white font-medium text-black",
                       desktop
-                        ? "px-3 py-1.5 text-[11px]"
-                        : "px-2 py-1 text-[10px]"
+                        ? "px-2.5 py-1 text-[10px]"
+                        : "px-1.5 py-0.5 text-[9px]"
                     )}
                   >
                     Change
@@ -1195,25 +1432,6 @@ const Create = () => {
             </span>
           </div>
         ) : null}
-        <button
-          className={cn(
-            "flex w-full items-center justify-between text-left",
-            desktop ? "py-1 text-base" : "py-0.5 text-xs"
-          )}
-          onClick={() => setShowFeeSheet(true)}
-          type="button"
-        >
-          <span className="inline-flex items-center gap-1 text-gray-600 dark:text-white/72">
-            Blockchain fee
-            <InformationCircleIcon
-              className={desktop ? "h-4 w-4" : "h-3.5 w-3.5"}
-            />
-          </span>
-          <span className="inline-flex items-center gap-1 text-gray-500 dark:text-white/54">
-            <CheckCircleIcon className={desktop ? "h-4 w-4" : "h-3.5 w-3.5"} />
-            Sponsored by Zora
-          </span>
-        </button>
       </div>
 
       <button
@@ -1230,11 +1448,6 @@ const Create = () => {
       >
         {isSubmitting ? "Creating..." : submitLabel}
       </button>
-      {walletSetupHint ? (
-        <p className="mt-2 text-center text-[11px] text-gray-500 dark:text-white/52">
-          {walletSetupHint}
-        </p>
-      ) : null}
     </div>
   );
 
@@ -1323,10 +1536,7 @@ const Create = () => {
 
               <div className="flex flex-1 flex-col justify-center pb-14">
                 <div className="text-center">
-                  <p className="inline-flex items-center gap-1.5 text-gray-500 text-sm dark:text-white/45">
-                    {topCopy.heroTitle}
-                    <InformationCircleIcon className="h-4 w-4" />
-                  </p>
+                  {renderCoinModeHint()}
                   <p
                     className={cn(
                       "mt-6 font-semibold text-6xl tracking-tight",
@@ -1357,20 +1567,15 @@ const Create = () => {
                     />
                   </div>
 
-                  <button
-                    className={cn(
-                      "mt-5 w-full rounded-[22px] px-5 py-4 font-semibold text-lg transition",
-                      hasTicker
-                        ? "bg-gray-950 text-white dark:bg-white dark:text-black"
-                        : "bg-gray-200 text-gray-400 dark:bg-white/12 dark:text-white/30"
-                    )}
-                    onClick={handleContinueFromTicker}
-                    type="button"
-                  >
-                    {hasTicker
-                      ? `Continue with ${previewCurrencyTicker}`
-                      : "Proceed"}
-                  </button>
+                  {hasTicker ? (
+                    <button
+                      className="mt-5 w-full rounded-[22px] bg-gray-950 px-5 py-4 font-semibold text-lg text-white transition dark:bg-white dark:text-black"
+                      onClick={handleContinueFromTicker}
+                      type="button"
+                    >
+                      {`Continue with ${previewCurrencyTicker}`}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -1391,10 +1596,7 @@ const Create = () => {
 
               <div className="flex-1 py-4">
                 <div className="pb-6 text-center">
-                  <p className="inline-flex items-center gap-1.5 text-gray-500 text-sm dark:text-white/45">
-                    {topCopy.heroTitle}
-                    <InformationCircleIcon className="h-4 w-4" />
-                  </p>
+                  {renderCoinModeHint()}
                   <p className="mt-5 font-semibold text-5xl text-gray-950 tracking-tight dark:text-white">
                     {previewCurrencyTicker}
                   </p>
@@ -1403,21 +1605,6 @@ const Create = () => {
                     {topCopy.availabilityLabel}
                   </p>
                 </div>
-
-                {activeTab === "creator" ? (
-                  <div className="mb-4">
-                    <CoinDetailSlidesPreview
-                      category={selectedCategory}
-                      compact
-                      creatorLabel={creatorPreviewLabel}
-                      mediaUrl={previewMediaUrl}
-                      previewImage={filePreviewUrl}
-                      ticker={previewTicker}
-                      title={previewCoinTitle}
-                    />
-                  </div>
-                ) : null}
-
                 {renderCreateForm({
                   showIntro: false,
                   showTickerField: false
@@ -1465,96 +1652,37 @@ const Create = () => {
                   <span className="font-medium text-sm">Every1 Create</span>
                 </div>
 
-                {activeTab === "creator" ? (
-                  <>
-                    <div className="mt-5">
-                      <div className="mb-4 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-white/16 px-3 py-1.5 text-white text-xs backdrop-blur-md">
-                          {previewCurrencyTicker}
-                        </span>
-                        <span className="rounded-full bg-white/16 px-3 py-1.5 text-white text-xs backdrop-blur-md">
-                          Creator coin
-                        </span>
-                      </div>
-                      <p className="max-w-sm font-semibold text-3xl text-white leading-tight">
-                        Preview the content, image, and chart stack before
-                        launch.
-                      </p>
-                      <p className="mt-3 max-w-sm text-sm text-white/78 leading-6">
-                        Imported creator links add a content slide first, and
-                        uploading the coin image adds the image slide between
-                        content and chart.
-                      </p>
-                    </div>
-
-                    <div className="mt-5 flex-1">
-                      <CoinDetailSlidesPreview
-                        category={selectedCategory}
-                        creatorLabel={creatorPreviewLabel}
-                        mediaUrl={previewMediaUrl}
-                        previewImage={filePreviewUrl}
-                        ticker={previewTicker}
-                        title={previewCoinTitle}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <div className="mt-auto">
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-white/16 px-3 py-1.5 text-white text-xs backdrop-blur-md">
-                        {previewCurrencyTicker}
-                      </span>
-                      <span className="rounded-full bg-white/16 px-3 py-1.5 text-white text-xs backdrop-blur-md">
-                        {isCommunity
-                          ? "Community linked on publish"
-                          : "Invite must be accepted"}
-                      </span>
-                    </div>
-                    <p className="max-w-sm font-semibold text-4xl text-white leading-tight">
+                <div className="mt-auto">
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    <span className="rounded-full bg-white/16 px-3 py-1.5 text-white text-xs backdrop-blur-md">
+                      {previewCurrencyTicker}
+                    </span>
+                    <span className="rounded-full bg-white/16 px-3 py-1.5 text-white text-xs backdrop-blur-md">
                       {isCommunity
-                        ? "Launch the community and its coin in one move."
-                        : "Set the split, send the invite, and wait for approval."}
-                    </p>
-                    <p className="mt-3 max-w-sm text-sm text-white/78 leading-6">
-                      {topCopy.previewBody}
-                    </p>
+                        ? "Community linked on publish"
+                        : isCollaboration
+                          ? "Invite must be accepted"
+                          : "Creator coin"}
+                    </span>
                   </div>
-                )}
+                  <p className="max-w-sm font-semibold text-4xl text-white leading-tight">
+                    {isCommunity
+                      ? "Launch the community and its coin in one move."
+                      : isCollaboration
+                        ? "Set the split, send the invite, and wait for approval."
+                        : "Launch your creator coin with one clean form."}
+                  </p>
+                  <p className="mt-3 max-w-sm text-sm text-white/78 leading-6">
+                    {topCopy.previewBody}
+                  </p>
+                </div>
               </div>
             </aside>
           </div>
         </div>
 
-        {showFeeSheet ? (
-          <div className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm dark:bg-black/70">
-            <button
-              aria-label="Close fee information"
-              className="absolute inset-0"
-              onClick={() => setShowFeeSheet(false)}
-              type="button"
-            />
-            <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-xl rounded-t-[28px] bg-white px-5 pt-4 pb-6 md:px-6 md:pb-8 dark:bg-[#1b1b1b]">
-              <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-gray-300 dark:bg-white/14" />
-              <p className="font-semibold text-2xl text-gray-950 md:text-[2rem] dark:text-white">
-                Understanding blockchain fees
-              </p>
-              <p className="mt-3 text-gray-600 text-sm leading-6 md:mt-4 md:text-lg md:leading-8 dark:text-white/64">
-                This is the fee paid to the Base network to process your
-                transaction. It varies with network demand and is not controlled
-                by Zora.
-              </p>
-              <button
-                className="mt-6 w-full rounded-full bg-gray-950 px-5 py-3.5 font-semibold text-lg text-white md:mt-8 md:px-6 md:py-4 md:text-2xl dark:bg-white dark:text-black"
-                onClick={() => setShowFeeSheet(false)}
-                type="button"
-              >
-                Got it
-              </button>
-            </div>
-          </div>
-        ) : null}
-
         <ActionStatusModal
+          actionLabel={isLaunchPendingModal ? "Approve" : undefined}
           description={statusModal?.description}
           label={
             isCommunity
@@ -1562,6 +1690,10 @@ const Create = () => {
               : isCollaboration
                 ? "Collaboration coin"
                 : "Creator coin"
+          }
+          onAction={isLaunchPendingModal ? handleApproveLaunch : undefined}
+          onClose={
+            isLaunchPendingModal ? handleCancelLaunchApproval : undefined
           }
           show={Boolean(statusModal)}
           title={statusModal?.title || ""}

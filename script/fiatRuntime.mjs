@@ -186,7 +186,7 @@ export const createFiatRuntime = ({ rootDir }) => {
       })
     : null;
 
-  const withAuth = async (request, rawBody = "") => {
+  const withAuth = async (request, rawBody = "", options = {}) => {
     if (!supabase) {
       const error = new Error("Fiat runtime is not configured on this server.");
       error.statusCode = 503;
@@ -194,6 +194,7 @@ export const createFiatRuntime = ({ rootDir }) => {
     }
 
     return authenticateFiatRequest({
+      ...options,
       rawBody,
       request,
       supabase
@@ -348,7 +349,9 @@ export const createFiatRuntime = ({ rootDir }) => {
       ) {
         const rawBody = await readRawBody(request);
         const body = parseJsonBody(rawBody);
-        const { profile } = await withAuth(request, rawBody);
+        const { profile } = await withAuth(request, rawBody, {
+          allowExecutionWallet: true
+        });
         const payload = await telegramService.announceCoinLaunch({
           category: body.category || null,
           coinAddress: body.coinAddress,
@@ -364,7 +367,9 @@ export const createFiatRuntime = ({ rootDir }) => {
       if (request.method === "POST" && pathname === "/api/telegram/trade") {
         const rawBody = await readRawBody(request);
         const body = parseJsonBody(rawBody);
-        const { profile } = await withAuth(request, rawBody);
+        const { profile } = await withAuth(request, rawBody, {
+          allowExecutionWallet: true
+        });
         const payload = await telegramService.announceTrade({
           coinAddress: body.coinAddress,
           coinName: body.coinName,

@@ -1,3 +1,4 @@
+import { isAddress } from "viem";
 import { asMoney, assert, toKobo } from "../utils.mjs";
 import {
   expireQuoteIfNeeded,
@@ -58,8 +59,22 @@ export const createSupportService = ({
   supportFeeBps = 250,
   supabase
 }) => {
-  const resolveExecutionWalletAddress = (profile) =>
-    profile?.execution_wallet_address || profile?.wallet_address || null;
+  const resolveExecutionWalletAddress = (profile, body = null) => {
+    const requestedExecutionWalletAddress = String(
+      body?.executionWalletAddress || ""
+    )
+      .trim()
+      .toLowerCase();
+
+    if (
+      requestedExecutionWalletAddress &&
+      isAddress(requestedExecutionWalletAddress)
+    ) {
+      return requestedExecutionWalletAddress;
+    }
+
+    return profile?.execution_wallet_address || profile?.wallet_address || null;
+  };
 
   const buildExecutionPayload = ({ transaction, wallet }) => ({
     message:
@@ -202,7 +217,7 @@ export const createSupportService = ({
   const execute = async ({ body, profile }) => {
     assert(body.quoteId, "quoteId is required.");
     const profileId = profile.id;
-    const executionWalletAddress = resolveExecutionWalletAddress(profile);
+    const executionWalletAddress = resolveExecutionWalletAddress(profile, body);
     const idempotencyKey = body.idempotencyKey || body.quoteId;
     const existing = await getIdempotencyRecord({
       key: idempotencyKey,

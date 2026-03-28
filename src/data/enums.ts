@@ -1,4 +1,5 @@
 export enum HomeFeedType {
+  ALL = "ALL",
   COLLABORATIONS = "COLLABORATIONS",
   FOLLOWING = "FOLLOWING",
   FORYOU = "FORYOU",

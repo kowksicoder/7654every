@@ -12,11 +12,8 @@ import {
   type FeaturedCreatorEntry,
   fetchFeaturedCreatorEntries,
   formatCompactMetric,
-  formatDelta,
-  formatUsdMetric,
   getCreatorTicker,
   getFeaturedCreatorAge,
-  isPositiveDelta,
   parseMetricNumber
 } from "@/helpers/liveCreatorData";
 
@@ -77,8 +74,8 @@ const MetricCell = ({
 );
 
 const MobileCreatorCard = ({ creator }: { creator: FeaturedCreatorEntry }) => {
-  const positive = isPositiveDelta(creator.marketCapDelta24h);
   const ticker = getCreatorTicker(creator.symbol);
+  const categoryLabel = creator.category || "Creator";
 
   return (
     <div className="rounded-[1.65rem] bg-white px-3.5 py-3 shadow-[0_18px_28px_-24px_rgba(15,23,42,0.12)] ring-1 ring-gray-200/80 dark:bg-[#171717] dark:shadow-[0_22px_32px_-28px_rgba(0,0,0,0.98)] dark:ring-white/[0.03]">
@@ -112,16 +109,17 @@ const MobileCreatorCard = ({ creator }: { creator: FeaturedCreatorEntry }) => {
 
       <div className="mt-3 grid grid-cols-4 gap-2">
         <MetricCell
-          label="Holders"
-          value={formatCompactMetric(creator.uniqueHolders)}
+          label="Coins"
+          value={formatCompactMetric(creator.launchCount || 1)}
         />
-        <MetricCell label="MC" value={formatUsdMetric(creator.marketCap)} />
-        <MetricCell label="Vol" value={formatUsdMetric(creator.volume24h)} />
+        <MetricCell label="Mode" value={categoryLabel} />
         <MetricCell
-          accent
-          label="24h"
-          negative={!positive}
-          value={formatDelta(creator.marketCapDelta24h)}
+          label="E1XP"
+          value={formatCompactMetric(creator.creatorE1xpTotal || 0)}
+        />
+        <MetricCell
+          label="Age"
+          value={getFeaturedCreatorAge(creator.createdAt)}
         />
       </div>
     </div>
@@ -129,16 +127,15 @@ const MobileCreatorCard = ({ creator }: { creator: FeaturedCreatorEntry }) => {
 };
 
 const CreatorRow = ({ creator }: { creator: FeaturedCreatorEntry }) => {
-  const positive = isPositiveDelta(creator.marketCapDelta24h);
   const ticker = getCreatorTicker(creator.symbol);
-  const earningsValue = formatUsdMetric(creator.creatorEarningsUsd ?? 0);
+  const statusLabel = creator.isOfficial ? "Verified" : "Public";
 
   return (
     <Card
       className="mx-5 px-4 py-4 shadow-none transition-colors hover:border-gray-300 hover:bg-gray-50/60 md:mx-0 md:px-5 dark:hover:border-gray-600 dark:hover:bg-gray-950/60"
       forceRounded
     >
-      <div className="grid gap-4 md:grid-cols-[minmax(0,2.4fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.8fr)_minmax(0,0.65fr)_minmax(0,0.8fr)] md:items-center">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.95fr)_minmax(0,0.8fr)_minmax(0,0.75fr)_minmax(0,0.8fr)] md:items-center">
         <div className="flex items-center gap-3">
           <Image
             alt={creator.name}
@@ -169,37 +166,37 @@ const CreatorRow = ({ creator }: { creator: FeaturedCreatorEntry }) => {
 
         <div>
           <p className="font-semibold text-[11px] text-gray-500 uppercase tracking-[0.18em] md:hidden">
-            Market cap
+            Mode
           </p>
           <p className="font-semibold text-base text-gray-950 dark:text-gray-50">
-            {formatUsdMetric(creator.marketCap)}
+            {creator.category || "Creator"}
           </p>
         </div>
 
         <div>
           <p className="font-semibold text-[11px] text-gray-500 uppercase tracking-[0.18em] md:hidden">
-            24h vol
+            Coins
           </p>
           <p className="font-semibold text-base text-gray-950 dark:text-gray-50">
-            {formatUsdMetric(creator.volume24h)}
+            {formatCompactMetric(creator.launchCount || 1)}
           </p>
         </div>
 
         <div>
           <p className="font-semibold text-[11px] text-gray-500 uppercase tracking-[0.18em] md:hidden">
-            Holders
+            E1XP
           </p>
           <p className="font-semibold text-base text-gray-950 dark:text-gray-50">
-            {formatCompactMetric(creator.uniqueHolders)}
+            {formatCompactMetric(creator.creatorE1xpTotal || 0)}
           </p>
         </div>
 
         <div>
           <p className="font-semibold text-[11px] text-gray-500 uppercase tracking-[0.18em] md:hidden">
-            Earnings
+            Status
           </p>
           <p className="font-semibold text-base text-gray-950 dark:text-gray-50">
-            {earningsValue}
+            {statusLabel}
           </p>
         </div>
 
@@ -214,15 +211,10 @@ const CreatorRow = ({ creator }: { creator: FeaturedCreatorEntry }) => {
 
         <div>
           <p className="font-semibold text-[11px] text-gray-500 uppercase tracking-[0.18em] md:hidden">
-            24h
+            Ticker
           </p>
-          <p
-            className={cn(
-              "font-semibold text-base",
-              positive ? "text-emerald-500" : "text-rose-500"
-            )}
-          >
-            {formatDelta(creator.marketCapDelta24h)}
+          <p className="font-semibold text-base text-gray-950 dark:text-gray-50">
+            {ticker || "--"}
           </p>
         </div>
       </div>
@@ -262,37 +254,37 @@ const Creators = () => {
   });
 
   const overviewCards = useMemo(() => {
-    const totalMarketCap = data.reduce(
-      (sum, creator) => sum + parseMetricNumber(creator.marketCap),
+    const totalCoins = data.reduce(
+      (sum, creator) => sum + (creator.launchCount || 1),
       0
     );
-    const totalVolume = data.reduce(
-      (sum, creator) => sum + parseMetricNumber(creator.volume24h),
+    const totalE1xp = data.reduce(
+      (sum, creator) => sum + parseMetricNumber(creator.creatorE1xpTotal),
       0
     );
-    const averageHolders =
-      data.reduce((sum, creator) => sum + creator.uniqueHolders, 0) /
-      Math.max(data.length, 1);
+    const verifiedCreators = data.filter(
+      (creator) => creator.isOfficial
+    ).length;
 
     return [
       {
-        label: "Featured",
+        label: "Creators",
         value: data.length.toString(),
         valueClassName: "text-[#26dd86]"
       },
       {
-        label: "Market Cap",
-        value: formatUsdMetric(totalMarketCap),
+        label: "Coins",
+        value: formatCompactMetric(totalCoins),
         valueClassName: "text-[#26dd86]"
       },
       {
-        label: "24h Vol",
-        value: formatUsdMetric(totalVolume),
+        label: "Verified",
+        value: formatCompactMetric(verifiedCreators),
         valueClassName: "text-[#26dd86]"
       },
       {
-        label: "Avg. Holders",
-        value: formatCompactMetric(averageHolders),
+        label: "Total E1XP",
+        value: formatCompactMetric(totalE1xp),
         valueClassName: "text-gray-900 dark:text-white"
       }
     ];
@@ -301,7 +293,7 @@ const Creators = () => {
   return (
     <>
       <MetaTags
-        description="Track Zora's weekly featured creators with live creator coin market caps, volume, holders, and 24 hour movement."
+        description="Browse creators who launched coins through Every1, grouped by their own platform activity."
         image={data[0]?.avatar || "/evlogo.jpg"}
         title="Creators"
       />
@@ -317,7 +309,7 @@ const Creators = () => {
                   Featured creators
                 </p>
                 <p className="text-[11px] text-gray-500 dark:text-[#9f9fa5]">
-                  This week on Zora
+                  Built on Every1
                 </p>
               </div>
             </div>
@@ -340,7 +332,7 @@ const Creators = () => {
             {!error && !isLoading && !data.length ? (
               <EmptyState
                 icon={<Squares2X2Icon className="size-8" />}
-                message="No featured creators found this week."
+                message="No Every1 creators found yet."
               />
             ) : null}
 
@@ -370,7 +362,7 @@ const Creators = () => {
                   Featured creators
                 </p>
                 <p className="text-[11px] text-gray-500 dark:text-[#a4a4a8]">
-                  Weekly list from Zora
+                  Platform list from Every1
                 </p>
               </div>
             </div>
@@ -404,21 +396,21 @@ const Creators = () => {
           ) : null}
 
           {!error && !isLoading ? (
-            <div className="hidden px-4 font-semibold text-gray-500 text-xs uppercase tracking-[0.18em] md:grid md:grid-cols-[minmax(0,2.4fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.8fr)_minmax(0,0.65fr)_minmax(0,0.8fr)] md:items-center md:px-5">
+            <div className="hidden px-4 font-semibold text-gray-500 text-xs uppercase tracking-[0.18em] md:grid md:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.95fr)_minmax(0,0.8fr)_minmax(0,0.75fr)_minmax(0,0.8fr)] md:items-center md:px-5">
               <span>Creator</span>
-              <span>Market cap</span>
-              <span>24h vol</span>
-              <span>Holders</span>
-              <span>Earnings</span>
+              <span>Mode</span>
+              <span>Coins</span>
+              <span>E1XP</span>
+              <span>Status</span>
               <span>Age</span>
-              <span>24h</span>
+              <span>Ticker</span>
             </div>
           ) : null}
 
           {!error && !isLoading && !data.length ? (
             <EmptyState
               icon={<Squares2X2Icon className="size-8" />}
-              message="No featured creators found this week."
+              message="No Every1 creators found yet."
             />
           ) : null}
 
@@ -430,9 +422,8 @@ const Creators = () => {
                     forceRounded
                     key={index.toString()}
                   >
-                    <div className="grid animate-pulse gap-4 md:grid-cols-[minmax(0,2.4fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,0.8fr)_minmax(0,0.65fr)_minmax(0,0.8fr)]">
+                    <div className="grid animate-pulse gap-4 md:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.95fr)_minmax(0,0.8fr)_minmax(0,0.75fr)_minmax(0,0.8fr)]">
                       <div className="h-10 rounded-full bg-gray-200 dark:bg-white/10" />
-                      <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />
                       <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />
                       <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />
                       <div className="h-6 rounded-full bg-gray-200 dark:bg-white/10" />

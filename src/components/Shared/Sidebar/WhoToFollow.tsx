@@ -17,10 +17,8 @@ import {
   fetchCreatorOfWeekEntry,
   fetchTraderLeaderboardEntries,
   formatCompactMetric,
-  formatDelta,
-  formatUsdMetric,
   getCreatorTicker,
-  isPositiveDelta,
+  getFeaturedCreatorAge,
   type TraderLeaderboardEntry
 } from "@/helpers/liveCreatorData";
 import { PUBLIC_CREATOR_OF_WEEK_QUERY_KEY } from "@/helpers/staff";
@@ -65,7 +63,6 @@ const CreatorOfWeekCard = ({ creator }: { creator: FeaturedCreatorEntry }) => {
     handle: creator.handle
   });
   const ticker = getCreatorTicker(creator.symbol);
-  const positive = isPositiveDelta(creator.marketCapDelta24h);
 
   if (!creatorPath) {
     return null;
@@ -124,40 +121,34 @@ const CreatorOfWeekCard = ({ creator }: { creator: FeaturedCreatorEntry }) => {
           <div className="grid grid-cols-4 gap-1.5">
             <div className="rounded-xl bg-gray-100 px-1.5 py-1.5 dark:bg-[#101011]">
               <p className="truncate font-semibold text-[12px] text-gray-900 tracking-tight dark:text-white">
-                {typeof creator.featuredPriceUsd === "number"
-                  ? formatUsdMetric(creator.featuredPriceUsd)
-                  : "--"}
+                {creator.category || "Creator"}
               </p>
               <p className="mt-0.5 font-medium text-[9px] text-gray-500 dark:text-[#8f8f96]">
-                Price
+                Mode
               </p>
             </div>
             <div className="rounded-xl bg-gray-100 px-1.5 py-1.5 dark:bg-[#101011]">
               <p className="truncate font-semibold text-[12px] text-gray-900 tracking-tight dark:text-white">
-                {formatUsdMetric(creator.marketCap)}
+                {formatCompactMetric(creator.launchCount || 1)}
               </p>
               <p className="mt-0.5 font-medium text-[9px] text-gray-500 dark:text-[#8f8f96]">
-                MC
+                Coins
               </p>
             </div>
             <div className="rounded-xl bg-gray-100 px-1.5 py-1.5 dark:bg-[#101011]">
               <p className="truncate font-semibold text-[12px] text-gray-900 tracking-tight dark:text-white">
-                {formatCompactMetric(creator.uniqueHolders)}
+                {formatCompactMetric(creator.creatorE1xpTotal || 0)}
               </p>
               <p className="mt-0.5 font-medium text-[9px] text-gray-500 dark:text-[#8f8f96]">
-                Holders
+                E1XP
               </p>
             </div>
             <div className="rounded-xl bg-gray-100 px-1.5 py-1.5 dark:bg-[#101011]">
-              <p
-                className={`truncate font-semibold text-[12px] tracking-tight ${
-                  positive ? "text-[#12c46b]" : "text-rose-500"
-                }`}
-              >
-                {formatDelta(creator.marketCapDelta24h)}
+              <p className="truncate font-semibold text-[12px] text-gray-900 tracking-tight dark:text-white">
+                {getFeaturedCreatorAge(creator.createdAt)}
               </p>
               <p className="mt-0.5 font-medium text-[9px] text-gray-500 dark:text-[#8f8f96]">
-                24h
+                Age
               </p>
             </div>
           </div>
@@ -167,35 +158,35 @@ const CreatorOfWeekCard = ({ creator }: { creator: FeaturedCreatorEntry }) => {
   );
 };
 
-const FanOfWeekCard = ({ fan }: { fan: TraderLeaderboardEntry }) => {
-  const fanPath = getPublicProfilePath({
-    address: fan.address,
-    handle: fan.handle
+const LeaderOfWeekCard = ({ leader }: { leader: TraderLeaderboardEntry }) => {
+  const leaderPath = getPublicProfilePath({
+    address: leader.address,
+    handle: leader.handle
   });
 
   const content = (
     <Card className="group overflow-hidden p-0 transition-transform duration-200 hover:-translate-y-0.5">
       <div className="relative h-20 overflow-hidden bg-gray-100 dark:bg-[#101011]">
         <Image
-          alt={fan.displayName}
+          alt={leader.displayName}
           className="h-full w-full scale-110 object-cover opacity-40 transition-transform duration-300 group-hover:scale-[1.14] dark:opacity-30"
-          src={fan.avatar || DEFAULT_AVATAR}
+          src={leader.avatar || DEFAULT_AVATAR}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-white dark:via-black/20 dark:to-[#060606]" />
         <div className="absolute top-2.5 left-2.5 flex flex-wrap items-center gap-1">
           <div className="inline-flex items-center gap-1 rounded-full bg-white/90 px-1.5 py-0.75 font-semibold text-[9px] text-gray-700 uppercase tracking-[0.12em] backdrop-blur dark:bg-black/45 dark:text-[#d9d9de]">
             <FireIcon className="size-3" />
-            Fan of the week
+            Leader of the week
           </div>
           <span className="rounded-full bg-orange-500/90 px-1.5 py-0.75 font-semibold text-[9px] text-white uppercase tracking-[0.1em]">
-            Top trader
+            Top score
           </span>
         </div>
         <div className="absolute -bottom-4.5 left-3.5">
           <Image
-            alt={fan.displayName}
+            alt={leader.displayName}
             className="size-12 rounded-2xl border-2 border-white object-cover shadow-sm ring-1 ring-gray-200 dark:border-[#060606] dark:ring-white/10"
-            src={fan.avatar || DEFAULT_AVATAR}
+            src={leader.avatar || DEFAULT_AVATAR}
           />
         </div>
       </div>
@@ -204,37 +195,21 @@ const FanOfWeekCard = ({ fan }: { fan: TraderLeaderboardEntry }) => {
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <p className="truncate font-semibold text-[14px] text-gray-900 dark:text-white">
-              {fan.displayName}
+              {leader.displayName}
             </p>
-            {fan.isOfficial ? (
+            {leader.isOfficial ? (
               <CheckBadgeIcon className="size-4 shrink-0 text-brand-500" />
             ) : null}
           </div>
           <p className="mt-0.5 truncate text-[11px] text-gray-500 dark:text-[#9e9ea5]">
-            {fan.handle}
+            {leader.handle}
           </p>
         </div>
 
         <div className="grid grid-cols-4 gap-1.5">
           <div className="rounded-xl bg-gray-100 px-1.5 py-1.5 dark:bg-[#101011]">
             <p className="truncate font-semibold text-[12px] text-gray-900 tracking-tight dark:text-white">
-              {formatUsdMetric(fan.weekVolumeUsd)}
-            </p>
-            <p className="mt-0.5 font-medium text-[9px] text-gray-500 dark:text-[#8f8f96]">
-              Earnings
-            </p>
-          </div>
-          <div className="rounded-xl bg-gray-100 px-1.5 py-1.5 dark:bg-[#101011]">
-            <p className="truncate font-semibold text-[12px] text-gray-900 tracking-tight dark:text-white">
-              {formatCompactMetric(fan.weekTradesCount)}
-            </p>
-            <p className="mt-0.5 font-medium text-[9px] text-gray-500 dark:text-[#8f8f96]">
-              Trades
-            </p>
-          </div>
-          <div className="rounded-xl bg-gray-100 px-1.5 py-1.5 dark:bg-[#101011]">
-            <p className="truncate font-semibold text-[12px] text-gray-900 tracking-tight dark:text-white">
-              {formatCompactMetric(fan.score)}
+              {formatCompactMetric(leader.score)}
             </p>
             <p className="mt-0.5 font-medium text-[9px] text-gray-500 dark:text-[#8f8f96]">
               Score
@@ -242,10 +217,26 @@ const FanOfWeekCard = ({ fan }: { fan: TraderLeaderboardEntry }) => {
           </div>
           <div className="rounded-xl bg-gray-100 px-1.5 py-1.5 dark:bg-[#101011]">
             <p className="truncate font-semibold text-[12px] text-gray-900 tracking-tight dark:text-white">
-              {formatCompactMetric(fan.e1xpTotal)}
+              {formatCompactMetric(leader.e1xpTotal)}
             </p>
             <p className="mt-0.5 font-medium text-[9px] text-gray-500 dark:text-[#8f8f96]">
               E1XP
+            </p>
+          </div>
+          <div className="rounded-xl bg-gray-100 px-1.5 py-1.5 dark:bg-[#101011]">
+            <p className="truncate font-semibold text-[12px] text-gray-900 tracking-tight dark:text-white">
+              {formatCompactMetric(leader.launchesCount)}
+            </p>
+            <p className="mt-0.5 font-medium text-[9px] text-gray-500 dark:text-[#8f8f96]">
+              Coins
+            </p>
+          </div>
+          <div className="rounded-xl bg-gray-100 px-1.5 py-1.5 dark:bg-[#101011]">
+            <p className="truncate font-semibold text-[12px] text-gray-900 tracking-tight dark:text-white">
+              {formatCompactMetric(leader.categoryCount)}
+            </p>
+            <p className="mt-0.5 font-medium text-[9px] text-gray-500 dark:text-[#8f8f96]">
+              Modes
             </p>
           </div>
         </div>
@@ -253,12 +244,12 @@ const FanOfWeekCard = ({ fan }: { fan: TraderLeaderboardEntry }) => {
     </Card>
   );
 
-  if (!fanPath) {
+  if (!leaderPath) {
     return content;
   }
 
   return (
-    <Link className="block" to={fanPath}>
+    <Link className="block" to={leaderPath}>
       {content}
     </Link>
   );
@@ -272,7 +263,7 @@ const CreatorWeekSlider = () => {
     staleTime: 5 * 60 * 1000
   });
 
-  const { data: fan, isLoading: isFanLoading } = useQuery({
+  const { data: leader, isLoading: isLeaderLoading } = useQuery({
     queryFn: async () => {
       try {
         const entries = await fetchTraderLeaderboardEntries(1);
@@ -281,7 +272,7 @@ const CreatorWeekSlider = () => {
         return null;
       }
     },
-    queryKey: ["fan-of-week"],
+    queryKey: ["leader-of-week"],
     staleTime: 5 * 60 * 1000
   });
 
@@ -295,11 +286,11 @@ const CreatorWeekSlider = () => {
               label: "Creator"
             }
           : null,
-        fan
+        leader
           ? {
-              content: <FanOfWeekCard fan={fan} />,
-              key: "fan",
-              label: "Fan"
+              content: <LeaderOfWeekCard leader={leader} />,
+              key: "leader",
+              label: "Leader"
             }
           : null
       ].filter(Boolean) as Array<{
@@ -307,7 +298,7 @@ const CreatorWeekSlider = () => {
         key: string;
         label: string;
       }>,
-    [creator, fan]
+    [creator, leader]
   );
 
   useEffect(() => {
@@ -316,7 +307,7 @@ const CreatorWeekSlider = () => {
     }
   }, [activeSlide, slides.length]);
 
-  if (isCreatorLoading && isFanLoading) {
+  if (isCreatorLoading && isLeaderLoading) {
     return <CreatorWeekSkeleton />;
   }
 

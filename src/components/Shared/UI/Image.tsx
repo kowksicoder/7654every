@@ -6,6 +6,7 @@ import type {
 } from "react";
 import { forwardRef, memo, useCallback, useEffect, useState } from "react";
 import { PLACEHOLDER_IMAGE } from "@/data/constants";
+import sanitizeDStorageUrl from "@/helpers/sanitizeDStorageUrl";
 
 const Image = forwardRef(
   (
@@ -16,6 +17,10 @@ const Image = forwardRef(
     ref: Ref<HTMLImageElement>
   ) => {
     const [imageLoadFailed, setImageLoadFailed] = useState(false);
+    const normalizedSrc =
+      typeof props.src === "string"
+        ? sanitizeDStorageUrl(props.src)
+        : props.src;
 
     const handleError = useCallback(
       (event: SyntheticEvent<HTMLImageElement, Event>) => {
@@ -32,7 +37,7 @@ const Image = forwardRef(
 
     useEffect(() => {
       setImageLoadFailed(false);
-    }, [props.src]);
+    }, [normalizedSrc]);
 
     return (
       <img
@@ -40,7 +45,7 @@ const Image = forwardRef(
         alt={props.alt || ""}
         onError={handleError}
         ref={ref}
-        src={imageLoadFailed ? PLACEHOLDER_IMAGE : props.src}
+        src={imageLoadFailed ? PLACEHOLDER_IMAGE : normalizedSrc}
       />
     );
   }

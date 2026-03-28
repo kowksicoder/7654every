@@ -1,7 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getCoinsLastTradedUnique,
-  getExploreNewAll,
   getExploreTopVolumeAll24h,
   setApiKey
 } from "@zoralabs/coins-sdk";
@@ -38,6 +37,7 @@ import {
 import { formatNaira } from "@/helpers/formatNaira";
 import getCoinPath from "@/helpers/getCoinPath";
 import getZoraApiKey from "@/helpers/getZoraApiKey";
+import { listPublicPlatformLaunches } from "@/helpers/platformDiscovery";
 import {
   disableBrowserPushSubscription,
   ensureBrowserPushSubscription,
@@ -671,7 +671,7 @@ const Every1RuntimeBridge = () => {
   ]);
 
   useEffect(() => {
-    if (!hasConfiguredSupabase || !profile?.id || !zoraApiKey) {
+    if (!hasConfiguredSupabase || !profile?.id) {
       return;
     }
 
@@ -685,24 +685,16 @@ const Every1RuntimeBridge = () => {
       exploreSyncInFlight.current = true;
 
       try {
-        const response = await getExploreNewAll({ count: 24 });
-        const items =
-          response.data?.exploreList?.edges
-            ?.map((edge) => edge.node)
-            .filter((item) => !item.platformBlocked)
-            .map((item) => ({
-              coinAddress: item.address,
-              creatorAddress: item.creatorAddress || null,
-              imageUrl:
-                item.mediaContent?.previewImage?.medium ||
-                item.mediaContent?.previewImage?.small ||
-                item.creatorProfile?.avatar?.previewImage?.medium ||
-                null,
-              listedAt: item.createdAt || null,
-              name: item.name || null,
-              source: "zora_explore",
-              ticker: item.symbol || null
-            })) ?? [];
+        const launches = await listPublicPlatformLaunches({ limit: 24 });
+        const items = launches.map((launch) => ({
+          coinAddress: launch.coinAddress,
+          creatorAddress: launch.creator.walletAddress || null,
+          imageUrl: launch.coverImageUrl || launch.creator.avatarUrl || null,
+          listedAt: launch.launchedAt || launch.createdAt || null,
+          name: launch.name || null,
+          source: "every1_platform",
+          ticker: launch.ticker || null
+        }));
 
         await syncExploreListingEvents(items);
 

@@ -11,12 +11,11 @@ import cn from "@/helpers/cn";
 import {
   fetchTraderLeaderboardEntries,
   formatCompactMetric,
-  formatUsdMetric,
-  parseMetricNumber,
+  getFeaturedCreatorAge,
   type TraderLeaderboardEntry
 } from "@/helpers/liveCreatorData";
 
-const leaderboardQueryKey = "zora-trader-leaderboard-page";
+const leaderboardQueryKey = "every1-platform-leaderboard-page";
 
 const OverviewCard = ({
   label,
@@ -131,16 +130,19 @@ const MobileLeaderboardCard = ({
           label="Score"
           value={formatCompactMetric(entry.score)}
         />
-        <MetricCard label="Vol" value={formatUsdMetric(entry.weekVolumeUsd)} />
-        <MetricCard
-          label="Trades"
-          value={formatCompactMetric(entry.weekTradesCount)}
-        />
-        <MetricCard
-          label="Holdings"
-          value={formatCompactMetric(entry.grossVolumeZora)}
-        />
         <MetricCard label="E1XP" value={formatCompactMetric(entry.e1xpTotal)} />
+        <MetricCard
+          label="Coins"
+          value={formatCompactMetric(entry.launchesCount)}
+        />
+        <MetricCard
+          label="Modes"
+          value={formatCompactMetric(entry.categoryCount)}
+        />
+        <MetricCard
+          label="Latest"
+          value={getFeaturedCreatorAge(entry.latestLaunchAt)}
+        />
       </div>
     </div>
   );
@@ -197,19 +199,19 @@ const LeaderboardRow = ({
         </div>
 
         <div className="text-center font-semibold text-gray-800 text-sm dark:text-gray-100">
-          {formatUsdMetric(entry.weekVolumeUsd)}
-        </div>
-
-        <div className="text-center font-semibold text-gray-800 text-sm dark:text-gray-100">
-          {formatCompactMetric(entry.weekTradesCount)}
-        </div>
-
-        <div className="text-center font-semibold text-gray-800 text-sm dark:text-gray-100">
-          {formatCompactMetric(entry.grossVolumeZora)}
-        </div>
-
-        <div className="text-center font-semibold text-gray-800 text-sm dark:text-gray-100">
           {formatCompactMetric(entry.e1xpTotal)}
+        </div>
+
+        <div className="text-center font-semibold text-gray-800 text-sm dark:text-gray-100">
+          {formatCompactMetric(entry.launchesCount)}
+        </div>
+
+        <div className="text-center font-semibold text-gray-800 text-sm dark:text-gray-100">
+          {formatCompactMetric(entry.categoryCount)}
+        </div>
+
+        <div className="text-center font-semibold text-gray-500 text-sm dark:text-gray-300">
+          {getFeaturedCreatorAge(entry.latestLaunchAt)}
         </div>
       </div>
     </Card>
@@ -251,35 +253,29 @@ const Leaderboard = () => {
   });
 
   const overviewCards = useMemo(() => {
-    const totalVolume = data.reduce(
-      (sum, entry) => sum + parseMetricNumber(entry.weekVolumeUsd),
+    const totalLaunches = data.reduce(
+      (sum, entry) => sum + entry.launchesCount,
       0
     );
-    const totalTrades = data.reduce(
-      (sum, entry) => sum + entry.weekTradesCount,
-      0
-    );
-    const totalZora = data.reduce(
-      (sum, entry) => sum + entry.grossVolumeZora,
-      0
-    );
+    const totalE1xp = data.reduce((sum, entry) => sum + entry.e1xpTotal, 0);
+    const verifiedCount = data.filter((entry) => entry.isOfficial).length;
     const topScore =
       data.length > 0 ? Math.max(...data.map((entry) => entry.score)) : 0;
 
     return [
       {
-        label: "Traders",
+        label: "Members",
         value: data.length.toString(),
         valueClassName: "text-[#26dd86]"
       },
       {
-        label: "Week Vol",
-        value: formatUsdMetric(totalVolume),
+        label: "Coins",
+        value: formatCompactMetric(totalLaunches),
         valueClassName: "text-[#26dd86]"
       },
       {
-        label: "Trades",
-        value: formatCompactMetric(totalTrades),
+        label: "Verified",
+        value: formatCompactMetric(verifiedCount),
         valueClassName: "text-[#ffbf34]"
       },
       {
@@ -288,8 +284,8 @@ const Leaderboard = () => {
         valueClassName: "text-gray-900 dark:text-white"
       },
       {
-        label: "Holdings",
-        value: formatCompactMetric(totalZora),
+        label: "Total E1XP",
+        value: formatCompactMetric(totalE1xp),
         valueClassName: "text-[#26dd86]"
       }
     ];
@@ -298,7 +294,7 @@ const Leaderboard = () => {
   return (
     <>
       <MetaTags
-        description="Track Zora's live weekly trader leaderboard with real score, volume, and trade totals."
+        description="Track the most active Every1 creators and members using platform launches and E1XP."
         image={data[0]?.avatar || "/evlogo.jpg"}
         title="Leaderboard"
       />
@@ -311,10 +307,10 @@ const Leaderboard = () => {
               </span>
               <div>
                 <p className="font-semibold text-[13px] text-gray-900 dark:text-white">
-                  Trader leaderboard
+                  Every1 leaderboard
                 </p>
                 <p className="text-[11px] text-gray-500 dark:text-[#9f9fa5]">
-                  This week on Zora
+                  Platform activity
                 </p>
               </div>
             </div>
@@ -337,7 +333,7 @@ const Leaderboard = () => {
             {!error && !isLoading && !data.length ? (
               <EmptyState
                 icon={<Squares2X2Icon className="size-8" />}
-                message="No weekly leaderboard data found right now."
+                message="No Every1 leaderboard data found yet."
               />
             ) : null}
 
@@ -365,10 +361,10 @@ const Leaderboard = () => {
               </span>
               <div className="text-center">
                 <p className="font-semibold text-gray-900 text-sm dark:text-white">
-                  Trader leaderboard
+                  Every1 leaderboard
                 </p>
                 <p className="text-[11px] text-gray-500 dark:text-[#a4a4a8]">
-                  Weekly ranking from Zora
+                  Ranked from platform launches
                 </p>
               </div>
             </div>
@@ -405,17 +401,17 @@ const Leaderboard = () => {
             <div className="hidden px-4 font-semibold text-[10px] text-gray-500 uppercase tracking-[0.16em] md:grid md:grid-cols-[minmax(0,2.6fr)_0.8fr_1fr_0.85fr_1fr_0.95fr] md:items-center">
               <span>Name</span>
               <span className="text-center">Score</span>
-              <span className="text-center">Week Vol</span>
-              <span className="text-center">Trades</span>
-              <span className="text-center">Holdings</span>
               <span className="text-center">E1XP</span>
+              <span className="text-center">Coins</span>
+              <span className="text-center">Modes</span>
+              <span className="text-center">Latest</span>
             </div>
           ) : null}
 
           {!error && !isLoading && !data.length ? (
             <EmptyState
               icon={<Squares2X2Icon className="size-8" />}
-              message="No weekly leaderboard data found right now."
+              message="No Every1 leaderboard data found yet."
             />
           ) : null}
 

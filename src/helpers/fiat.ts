@@ -1,4 +1,5 @@
 import type { Address, Hex, WalletClient } from "viem";
+import { logActionError } from "@/helpers/actionErrorLogger";
 import type {
   FiatCreatorCoin,
   FiatCreatorCoinActivityResponse,
@@ -125,6 +126,18 @@ const fiatFetch = async <TResponse>({
   walletClient?: WalletClient;
 }) => {
   const bodyString = body ? JSON.stringify(body) : "";
+  const logBody =
+    body && typeof body === "object"
+      ? {
+          ...body,
+          accountNumber:
+            "accountNumber" in body &&
+            typeof body.accountNumber === "string" &&
+            body.accountNumber
+              ? `${body.accountNumber.slice(0, 2)}***${body.accountNumber.slice(-2)}`
+              : undefined
+        }
+      : body;
   const headers: HeadersInit = {};
 
   if (bodyString) {
@@ -149,10 +162,29 @@ const fiatFetch = async <TResponse>({
     body: bodyString || undefined,
     headers,
     method
+  }).catch((error) => {
+    logActionError("fiat.request.network", error, {
+      hasAuth: Boolean(profileId && walletAddress && walletClient),
+      method,
+      path,
+      profileId: profileId || null,
+      requestBody: logBody
+    });
+    throw error;
   });
 
   if (!response.ok) {
-    throw new Error(await parseResponseError(response));
+    const error = new Error(await parseResponseError(response));
+    logActionError("fiat.request.http", error, {
+      hasAuth: Boolean(profileId && walletAddress && walletClient),
+      method,
+      path,
+      profileId: profileId || null,
+      requestBody: logBody,
+      status: response.status,
+      statusText: response.statusText
+    });
+    throw error;
   }
 
   return (await response.json()) as TResponse;
@@ -244,6 +276,7 @@ export const getSupportQuote = (
       coinAddress: input.coinAddress,
       creatorCoinId: input.creatorCoinId,
       creatorId: input.creatorId,
+      executionWalletAddress: input.executionWalletAddress,
       idempotencyKey: input.idempotencyKey,
       launchId: input.launchId,
       nairaAmount: input.nairaAmount,
@@ -265,6 +298,7 @@ export const executeSupport = (
 ) =>
   fiatFetch<SupportExecuteResponse>({
     body: {
+      executionWalletAddress: input.executionWalletAddress,
       idempotencyKey: input.idempotencyKey,
       quoteId: input.quoteId
     },
@@ -287,6 +321,7 @@ export const getSellQuote = (
       coinAddress: input.coinAddress,
       coinAmount: input.coinAmount,
       creatorCoinId: input.creatorCoinId,
+      executionWalletAddress: input.executionWalletAddress,
       idempotencyKey: input.idempotencyKey,
       launchId: input.launchId,
       ticker: input.ticker
@@ -307,6 +342,7 @@ export const executeSell = (
 ) =>
   fiatFetch<SellExecuteResponse>({
     body: {
+      executionWalletAddress: input.executionWalletAddress,
       idempotencyKey: input.idempotencyKey,
       quoteId: input.quoteId,
       transactionHash: input.transactionHash

@@ -33,7 +33,7 @@ import ZoraPostCommentsDrawer from "./ZoraPostCommentsDrawer";
 import ZoraProfileDrawer from "./ZoraProfileDrawer";
 import type { ZoraFeedItem } from "./zoraHomeFeedConfig";
 
-const formatUsdMetric = (value?: string) => {
+const formatUsdMetric = (value?: null | string) => {
   const number = Number.parseFloat(value ?? "");
 
   return formatCompactNaira(number, 2);
@@ -268,7 +268,7 @@ const ZoraPostMobileViewer = ({
                       muted
                       playsInline
                       poster={previewImage}
-                      src={videoSource}
+                      src={videoSource || undefined}
                     />
                   ) : (
                     <img
